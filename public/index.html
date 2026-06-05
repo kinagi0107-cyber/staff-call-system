@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>スタッフコール - QR呼び出しシステム</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+      background: #f5f5f5;
+      color: #333;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px 20px;
+      border-radius: 10px;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+
+    .header h1 {
+      font-size: 28px;
+      margin-bottom: 10px;
+    }
+
+    .header p {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #ddd;
+    }
+
+    .tab-button {
+      padding: 12px 20px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 500;
+      color: #666;
+      border-bottom: 3px solid transparent;
+      transition: all 0.3s;
+    }
+
+    .tab-button.active {
+      color: #667eea;
+      border-bottom-color: #667eea;
+    }
+
+    .tab-button:hover {
+      color: #667eea;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .card {
+      background: white;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      margin-bottom: 20px;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: #333;
+    }
+
+    .form-group input,
+    .form-group textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-size: 14px;
+      font-family: inherit;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .button {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 5px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .button-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .button-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .button-secondary {
+      background: #f0f0f0;
+      color: #333;
+    }
+
+    .button-secondary:hover {
+      background: #e0e0e0;
+    }
+
+    .button-danger {
+      background: #ef4444;
+      color: white;
+    }
+
+    .button-danger:hover {
+      background: #dc2626;
+    }
+
+    .button-success {
+      background: #22c55e;
+      color: white;
+    }
+
+    .button-success:hover {
+      background: #16a34a;
+    }
+
+    .qr-container {
+      text-align: center;
+      padding: 20px;
+    }
+
+    #qrcode {
+      display: inline-block;
+      padding: 20px;
+      background: white;
+      border-radius: 10px;
+    }
+
+    .call-list {
+      max-height: 600px;
+      overflow-y: auto;
+    }
+
+    .call-item {
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      margin-bottom: 10px;
+      background: white;
+      transition: all 0.3s;
+    }
+
+    .call-item:hover {
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .call-item.pending {
+      border-left: 4px solid #f59e0b;
+      background: #fffbf0;
+    }
+
+    .call-item.resolved {
+      border-left: 4px solid #22c55e;
+      background: #f0fdf4;
+    }
+
+    .call-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .call-location {
+      font-size: 18px;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .call-status {
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .status-pending {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .status-resolved {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .call-time {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 10px;
+    }
+
+    .call-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .call-actions button {
+      flex: 1;
+      padding: 8px 12px;
+      font-size: 12px;
+    }
+
+    .video-container {
+      width: 100%;
+      max-width: 100%;
+      margin-bottom: 20px;
+    }
+
+    #video {
+      width: 100%;
+      border-radius: 5px;
+      background: #000;
+    }
+
+    .camera-controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .camera-controls button {
+      flex: 1;
+    }
+
+    .alert {
+      padding: 15px;
+      border-radius: 5px;
+      margin-bottom: 20px;
+    }
+
+    .alert-success {
+      background: #dcfce7;
+      color: #166534;
+      border: 1px solid #bbf7d0;
+    }
+
+    .alert-error {
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+    }
+
+    .alert-info {
+      background: #dbeafe;
+      color: #1e40af;
+      border: 1px solid #bfdbfe;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    @media (max-width: 768px) {
+      .header h1 {
+        font-size: 20px;
+      }
+
+      .tabs {
+        flex-wrap: wrap;
+      }
+
+      .tab-button {
+        padding: 10px 15px;
+        font-size: 14px;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    function App() {
+      const [activeTab, setActiveTab] = useState('customer');
+      const [qrCodes, setQrCodes] = useState([]);
+      const [calls, setCalls] = useState([]);
+      const [newQrName, setNewQrName] = useState('');
+      const [customLocation, setCustomLocation] = useState('');
+      const [selectedQrId, setSelectedQrId] = useState('');
+      const [message, setMessage] = useState('');
+      const [isCameraActive, setIsCameraActive] = useState(false);
+      const videoRef = useRef(null);
+      const canvasRef = useRef(null);
+      const eventSourceRef = useRef(null);
+
+      // Fetch QR codes
+      useEffect(() => {
+        fetchQrCodes();
+      }, []);
+
+      // Fetch calls
+      useEffect(() => {
+        fetchCalls();
+      }, []);
+
+      // Setup SSE for real-time updates
+      useEffect(() => {
+        const eventSource = new EventSource('/api/events');
+        eventSourceRef.current = eventSource;
+
+        eventSource.onmessage = (event) => {
+          const data = JSON.parse(event.data);
+          if (data.type === 'new_call' || data.type === 'call_updated' || data.type === 'calls_cleared') {
+            fetchCalls();
+          }
+        };
+
+        return () => {
+          eventSource.close();
+        };
+      }, []);
+
+      const fetchQrCodes = async () => {
+        try {
+          const response = await fetch('/api/qr-codes');
+          const data = await response.json();
+          setQrCodes(data);
+          if (data.length > 0 && !selectedQrId) {
+            setSelectedQrId(data[0].id);
+          }
+        } catch (error) {
+          console.error('Error fetching QR codes:', error);
+          showMessage('QRコード取得エラー', 'error');
+        }
+      };
+
+      const fetchCalls = async () => {
+        try {
+          const response = await fetch('/api/calls');
+          const data = await response.json();
+          setCalls(data);
+        } catch (error) {
+          console.error('Error fetching calls:', error);
+        }
+      };
+
+      const createQrCode = async () => {
+        if (!newQrName.trim()) {
+          showMessage('QRコード名を入力してください', 'error');
+          return;
+        }
+
+        try {
+          const response = await fetch('/api/qr-codes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: newQrName }),
+          });
+
+          if (!response.ok) throw new Error('Failed to create QR code');
+
+          const newCode = await response.json();
+          setQrCodes([...qrCodes, newCode]);
+          setNewQrName('');
+          showMessage('QRコードを作成しました', 'success');
+        } catch (error) {
+          console.error('Error creating QR code:', error);
+          showMessage('QRコード作成エラー', 'error');
+        }
+      };
+
+      const generateQrImage = (qrCodeId) => {
+        const element = document.getElementById(`qr-${qrCodeId}`);
+        if (element) {
+          element.innerHTML = '';
+          QRCode.toCanvas(element, qrCodeId, { width: 200 }, (error) => {
+            if (error) console.error(error);
+          });
+        }
+      };
+
+      const submitCall = async () => {
+        if (!selectedQrId || !customLocation.trim()) {
+          showMessage('QRコードと場所名を選択してください', 'error');
+          return;
+        }
+
+        try {
+          const response = await fetch('/api/calls', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              qrCodeId: selectedQrId,
+              locationName: customLocation,
+            }),
+          });
+
+          if (!response.ok) throw new Error('Failed to create call');
+
+          setCustomLocation('');
+          showMessage('スタッフを呼び出しました！', 'success');
+          playNotificationSound();
+        } catch (error) {
+          console.error('Error submitting call:', error);
+          showMessage('呼び出しエラー', 'error');
+        }
+      };
+
+      const updateCallStatus = async (callId, status) => {
+        try {
+          const response = await fetch(`/api/calls/${callId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status }),
+          });
+
+          if (!response.ok) throw new Error('Failed to update call');
+
+          playNotificationSound();
+        } catch (error) {
+          console.error('Error updating call:', error);
+          showMessage('ステータス更新エラー', 'error');
+        }
+      };
+
+      const deleteAllCalls = async () => {
+        if (!confirm('すべての呼び出し履歴を削除してもよろしいですか？')) return;
+
+        try {
+          const response = await fetch('/api/calls', {
+            method: 'DELETE',
+          });
+
+          if (!response.ok) throw new Error('Failed to delete calls');
+
+          showMessage('呼び出し履歴を削除しました', 'success');
+        } catch (error) {
+          console.error('Error deleting calls:', error);
+          showMessage('削除エラー', 'error');
+        }
+      };
+
+      const startCamera = async () => {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'environment' },
+          });
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+            setIsCameraActive(true);
+            scanQrCode();
+          }
+        } catch (error) {
+          console.error('Error accessing camera:', error);
+          showMessage('カメラへのアクセスが拒否されました', 'error');
+        }
+      };
+
+      const stopCamera = () => {
+        if (videoRef.current && videoRef.current.srcObject) {
+          const tracks = videoRef.current.srcObject.getTracks();
+          tracks.forEach((track) => track.stop());
+          setIsCameraActive(false);
+        }
+      };
+
+      const scanQrCode = () => {
+        if (!isCameraActive || !videoRef.current || !canvasRef.current) return;
+
+        const canvas = canvasRef.current;
+        const context = canvas.getContext('2d');
+        const video = videoRef.current;
+
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(imageData.data, imageData.width, imageData.height);
+
+        if (code) {
+          setSelectedQrId(code.data);
+          stopCamera();
+          showMessage(`QRコードをスキャンしました: ${code.data}`, 'success');
+        } else {
+          requestAnimationFrame(scanQrCode);
+        }
+      };
+
+      const playNotificationSound = () => {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+
+        oscillator.frequency.value = 800;
+        oscillator.type = 'sine';
+
+        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.5);
+      };
+
+      const showMessage = (text, type) => {
+        setMessage({ text, type });
+        setTimeout(() => setMessage(''), 3000);
+      };
+
+      return (
+        <div className="container">
+          <div className="header">
+            <h1>🎯 スタッフコール</h1>
+            <p>QRコードをスキャンして店員を呼び出す</p>
+          </div>
+
+          {message && (
+            <div className={`alert alert-${message.type}`}>
+              {message.text}
+            </div>
+          )}
+
+          <div className="tabs">
+            <button
+              className={`tab-button ${activeTab === 'customer' ? 'active' : ''}`}
+              onClick={() => setActiveTab('customer')}
+            >
+              👥 顧客用
+            </button>
+            <button
+              className={`tab-button ${activeTab === 'staff' ? 'active' : ''}`}
+              onClick={() => setActiveTab('staff')}
+            >
+              📊 スタッフダッシュボード
+            </button>
+            <button
+              className={`tab-button ${activeTab === 'admin' ? 'active' : ''}`}
+              onClick={() => setActiveTab('admin')}
+            >
+              ⚙️ 管理者
+            </button>
+          </div>
+
+          {/* Customer Tab */}
+          <div className={`tab-content ${activeTab === 'customer' ? 'active' : ''}`}>
+            <div className="card">
+              <h2 style={{ marginBottom: '20px' }}>QRコードをスキャン</h2>
+
+              <div className="form-group">
+                <label>QRコードを選択またはスキャン</label>
+                <select
+                  value={selectedQrId}
+                  onChange={(e) => setSelectedQrId(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    border: '1px solid #ddd',
+                    borderRadius: '5px',
+                  }}
+                >
+                  <option value="">-- QRコードを選択 --</option>
+                  {qrCodes.map((code) => (
+                    <option key={code.id} value={code.id}>
+                      {code.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="camera-controls">
+                <button
+                  className="button button-primary"
+                  onClick={startCamera}
+                  disabled={isCameraActive}
+                >
+                  📷 カメラでスキャン
+                </button>
+                {isCameraActive && (
+                  <button className="button button-secondary" onClick={stopCamera}>
+                    ✕ カメラを閉じる
+                  </button>
+                )}
+              </div>
+
+              {isCameraActive && (
+                <div className="video-container">
+                  <video ref={videoRef} autoPlay playsInline />
+                  <canvas ref={canvasRef} style={{ display: 'none' }} />
+                </div>
+              )}
+
+              <div className="form-group">
+                <label>場所名を入力</label>
+                <input
+                  type="text"
+                  placeholder="例: テーブル1, 売場A, レジ"
+                  value={customLocation}
+                  onChange={(e) => setCustomLocation(e.target.value)}
+                />
+              </div>
+
+              <button className="button button-primary" onClick={submitCall} style={{ width: '100%' }}>
+                🔔 スタッフを呼び出す
+              </button>
+            </div>
+          </div>
+
+          {/* Staff Dashboard Tab */}
+          <div className={`tab-content ${activeTab === 'staff' ? 'active' : ''}`}>
+            <div className="card">
+              <h2 style={{ marginBottom: '20px' }}>呼び出し一覧</h2>
+              <div className="call-list">
+                {calls.length === 0 ? (
+                  <p style={{ textAlign: 'center', color: '#999', padding: '40px 20px' }}>
+                    呼び出しはまだありません
+                  </p>
+                ) : (
+                  calls.map((call) => (
+                    <div key={call.id} className={`call-item ${call.status}`}>
+                      <div className="call-header">
+                        <div className="call-location">{call.location_name}</div>
+                        <span className={`call-status status-${call.status}`}>
+                          {call.status === 'pending' ? '待機中' : '対応済み'}
+                        </span>
+                      </div>
+                      <div className="call-time">
+                        {new Date(call.created_at).toLocaleString('ja-JP')}
+                      </div>
+                      <div className="call-actions">
+                        {call.status === 'pending' && (
+                          <button
+                            className="button button-success"
+                            onClick={() => updateCallStatus(call.id, 'resolved')}
+                          >
+                            ✓ 対応完了
+                          </button>
+                        )}
+                        {call.status === 'resolved' && (
+                          <button
+                            className="button button-secondary"
+                            onClick={() => updateCallStatus(call.id, 'pending')}
+                          >
+                            ↺ 再度待機中に
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Admin Tab */}
+          <div className={`tab-content ${activeTab === 'admin' ? 'active' : ''}`}>
+            <div className="grid">
+              <div className="card">
+                <h2 style={{ marginBottom: '20px' }}>新しいQRコードを作成</h2>
+                <div className="form-group">
+                  <label>QRコード名</label>
+                  <input
+                    type="text"
+                    placeholder="例: テーブル1, 売場A"
+                    value={newQrName}
+                    onChange={(e) => setNewQrName(e.target.value)}
+                  />
+                </div>
+                <button className="button button-primary" onClick={createQrCode} style={{ width: '100%' }}>
+                  + 作成
+                </button>
+              </div>
+
+              <div className="card">
+                <h2 style={{ marginBottom: '20px' }}>QRコード一覧</h2>
+                {qrCodes.map((code) => (
+                  <div key={code.id} style={{ marginBottom: '20px' }}>
+                    <div style={{ marginBottom: '10px' }}>
+                      <strong>{code.name}</strong>
+                      <div style={{ fontSize: '12px', color: '#666' }}>ID: {code.id}</div>
+                    </div>
+                    <div id={`qr-${code.id}`} className="qr-container" />
+                    {typeof document !== 'undefined' &&
+                      setTimeout(() => generateQrImage(code.id), 0)}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="card" style={{ marginTop: '20px' }}>
+              <h2 style={{ marginBottom: '20px' }}>危険なアクション</h2>
+              <button className="button button-danger" onClick={deleteAllCalls} style={{ width: '100%' }}>
+                🗑️ すべての呼び出し履歴を削除
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.render(<App />, document.getElementById('root'));
+  </script>
+</body>
+</html>
