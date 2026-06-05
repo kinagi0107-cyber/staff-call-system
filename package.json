@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "node --loader tsx server.ts",
     "build": "npx esbuild server.ts --bundle --platform=node --packages=external --format=esm --outfile=dist/server.js",
+    "prestart": "npm run build",
     "start": "node dist/server.js",
     "dev:simple": "tsx server.ts"
   },
