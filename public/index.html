@@ -4,30 +4,23 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>スタッフコール - QR呼び出しシステム</title>
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
     }
-
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
       background: #f5f5f5;
       color: #333;
     }
-
     .container {
       max-width: 1200px;
       margin: 0 auto;
       padding: 20px;
     }
-
     .header {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
@@ -36,860 +29,551 @@
       margin-bottom: 30px;
       text-align: center;
     }
-
     .header h1 {
       font-size: 28px;
       margin-bottom: 10px;
     }
-
     .header p {
       font-size: 14px;
       opacity: 0.9;
     }
-
     .tabs {
       display: flex;
       gap: 10px;
       margin-bottom: 20px;
       border-bottom: 2px solid #ddd;
     }
-
     .tab-button {
       padding: 12px 20px;
       border: none;
-      background: none;
+      background: transparent;
       cursor: pointer;
-      font-size: 16px;
+      font-size: 14px;
       font-weight: 500;
       color: #666;
       border-bottom: 3px solid transparent;
       transition: all 0.3s;
     }
-
     .tab-button.active {
       color: #667eea;
       border-bottom-color: #667eea;
     }
-
     .tab-button:hover {
       color: #667eea;
     }
-
     .tab-content {
       display: none;
     }
-
     .tab-content.active {
       display: block;
     }
-
     .card {
       background: white;
       border-radius: 10px;
       padding: 20px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
       margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
-
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    @media (max-width: 768px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
     .form-group {
       margin-bottom: 15px;
     }
-
     .form-group label {
       display: block;
-      margin-bottom: 8px;
+      margin-bottom: 5px;
       font-weight: 500;
-      color: #333;
+      font-size: 14px;
     }
-
     .form-group input,
-    .form-group textarea {
+    .form-group select {
       width: 100%;
       padding: 10px;
       border: 1px solid #ddd;
       border-radius: 5px;
       font-size: 14px;
-      font-family: inherit;
     }
-
-    .form-group input:focus,
-    .form-group textarea:focus {
-      outline: none;
-      border-color: #667eea;
-      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-    }
-
     .button {
-      padding: 12px 24px;
+      padding: 12px 20px;
       border: none;
       border-radius: 5px;
-      font-size: 14px;
-      font-weight: 600;
       cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
       transition: all 0.3s;
     }
-
     .button-primary {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: #667eea;
       color: white;
     }
-
     .button-primary:hover {
+      background: #5568d3;
       transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
     }
-
     .button-secondary {
       background: #f0f0f0;
       color: #333;
+      margin-left: auto;
     }
-
     .button-secondary:hover {
       background: #e0e0e0;
     }
-
     .button-danger {
-      background: #ef4444;
+      background: #ff4757;
       color: white;
+      width: 100%;
     }
-
     .button-danger:hover {
-      background: #dc2626;
+      background: #ff3838;
     }
-
-    .button-success {
-      background: #22c55e;
-      color: white;
-    }
-
-    .button-success:hover {
-      background: #16a34a;
-    }
-
     .qr-container {
-      text-align: center;
+      display: flex;
+      justify-content: center;
       padding: 20px;
-      background: white;
-      border-radius: 10px;
-      border: 1px solid #ddd;
+      background: #f9f9f9;
+      border-radius: 5px;
+      min-height: 220px;
     }
-
-    .qr-canvas {
+    .qr-container canvas {
       max-width: 100%;
       height: auto;
     }
-
     .call-list {
-      max-height: 600px;
+      max-height: 400px;
       overflow-y: auto;
     }
-
     .call-item {
       padding: 15px;
-      border: 1px solid #ddd;
+      background: #f9f9f9;
       border-radius: 5px;
       margin-bottom: 10px;
-      background: white;
-      transition: all 0.3s;
+      border-left: 4px solid #667eea;
     }
-
-    .call-item:hover {
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-
-    .call-item.pending {
-      border-left: 4px solid #f59e0b;
-      background: #fffbf0;
-    }
-
-    .call-item.resolved {
-      border-left: 4px solid #22c55e;
-      background: #f0fdf4;
-    }
-
-    .call-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 10px;
-    }
-
-    .call-location {
-      font-size: 18px;
-      font-weight: 600;
+    .call-item-location {
+      font-weight: 500;
       color: #333;
     }
-
-    .call-status {
-      padding: 4px 12px;
-      border-radius: 20px;
+    .call-item-time {
       font-size: 12px;
-      font-weight: 600;
+      color: #999;
+      margin-top: 5px;
     }
-
-    .status-pending {
-      background: #fef3c7;
-      color: #92400e;
-    }
-
-    .status-resolved {
-      background: #dcfce7;
-      color: #166534;
-    }
-
-    .call-time {
-      font-size: 12px;
-      color: #666;
-      margin-bottom: 10px;
-    }
-
-    .call-actions {
-      display: flex;
-      gap: 10px;
-    }
-
-    .call-actions button {
-      flex: 1;
-      padding: 8px 12px;
-      font-size: 12px;
-    }
-
-    .video-container {
-      width: 100%;
-      max-width: 100%;
-      margin-bottom: 20px;
-    }
-
-    #video {
-      width: 100%;
-      border-radius: 5px;
-      background: #000;
-    }
-
-    .camera-controls {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-
-    .camera-controls button {
-      flex: 1;
-    }
-
-    .alert {
+    .status-message {
       padding: 15px;
       border-radius: 5px;
       margin-bottom: 20px;
-    }
-
-    .alert-success {
-      background: #dcfce7;
-      color: #166534;
-      border: 1px solid #bbf7d0;
-    }
-
-    .alert-error {
-      background: #fee2e2;
-      color: #991b1b;
-      border: 1px solid #fecaca;
-    }
-
-    .alert-info {
-      background: #dbeafe;
-      color: #1e40af;
-      border: 1px solid #bfdbfe;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 20px;
-    }
-
-    .login-container {
-      max-width: 400px;
-      margin: 60px auto;
-      background: white;
-      padding: 40px;
-      border-radius: 10px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    }
-
-    .login-container h2 {
       text-align: center;
-      margin-bottom: 30px;
-      color: #333;
     }
-
-    .logout-button {
-      margin-top: 20px;
+    .status-success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .status-error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal.active {
+      display: flex;
+    }
+    .modal-content {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      max-width: 400px;
+      width: 90%;
+    }
+    .modal-content h2 {
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .modal-content input {
       width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
     }
-
-    @media (max-width: 768px) {
-      .header h1 {
-        font-size: 20px;
-      }
-
-      .tabs {
-        flex-wrap: wrap;
-      }
-
-      .tab-button {
-        padding: 10px 15px;
-        font-size: 14px;
-      }
-
-      .grid {
-        grid-template-columns: 1fr;
-      }
+    .modal-buttons {
+      display: flex;
+      gap: 10px;
+    }
+    .modal-buttons button {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .modal-buttons .button-primary {
+      background: #667eea;
+      color: white;
+    }
+    .modal-buttons .button-secondary {
+      background: #f0f0f0;
+      color: #333;
     }
   </style>
 </head>
 <body>
-  <div id="root"></div>
+  <div class="container">
+    <div class="header">
+      <h1>🎯 スタッフコール</h1>
+      <p>QRコードをスキャンして店員を呼び出す</p>
+    </div>
 
-  <script type="text/babel">
-    const { useState, useEffect, useRef } = React;
+    <div class="tabs">
+      <button class="tab-button active" onclick="switchTab('customer')">👥 顧客用</button>
+      <button class="tab-button" onclick="switchTab('staff')">📊 スタッフダッシュボード</button>
+      <button class="tab-button" onclick="switchTab('admin')">⚙️ 管理者</button>
+      <button class="button button-secondary" onclick="logout()" id="logoutBtn" style="display: none;">ログアウト</button>
+    </div>
 
-    // Wait for QRCode library to load
-    const waitForQRCode = () => {
-      return new Promise((resolve) => {
-        if (typeof window.QRCode !== 'undefined') {
-          resolve();
-        } else {
-          const checkInterval = setInterval(() => {
-            if (typeof window.QRCode !== 'undefined') {
-              clearInterval(checkInterval);
-              resolve();
-            }
-          }, 100);
-          setTimeout(() => clearInterval(checkInterval), 5000);
-        }
-      });
-    };
+    <!-- 顧客タブ -->
+    <div id="customer-tab" class="tab-content active">
+      <div class="card">
+        <h2 style="margin-bottom: 20px;">QRコードをスキャン</h2>
+        <div class="form-group">
+          <label>QRコードを選択またはスキャン</label>
+          <select id="qrSelect" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+            <option value="">-- QRコードを選択 --</option>
+          </select>
+        </div>
+        <div style="margin-bottom: 15px;">
+          <button class="button button-primary" onclick="startCamera()" style="width: 100%;">📷 カメラでスキャン</button>
+        </div>
+        <div class="form-group">
+          <label>場所名を入力</label>
+          <input type="text" id="locationInput" placeholder="例: テーブル1, 売場A, レジ">
+        </div>
+        <button class="button button-primary" onclick="callStaff()" style="width: 100%;">🔔 スタッフを呼び出す</button>
+      </div>
+    </div>
 
-    function App() {
-      const [activeTab, setActiveTab] = useState('customer');
-      const [qrCodes, setQrCodes] = useState([]);
-      const [calls, setCalls] = useState([]);
-      const [newQrName, setNewQrName] = useState('');
-      const [customLocation, setCustomLocation] = useState('');
-      const [selectedQrId, setSelectedQrId] = useState('');
-      const [message, setMessage] = useState('');
-      const [isCameraActive, setIsCameraActive] = useState(false);
-      const [isAuthenticated, setIsAuthenticated] = useState(false);
-      const [password, setPassword] = useState('');
-      const videoRef = useRef(null);
-      const canvasRef = useRef(null);
-      const eventSourceRef = useRef(null);
-      const qrRefs = useRef({});
+    <!-- スタッフダッシュボード -->
+    <div id="staff-tab" class="tab-content">
+      <div class="card">
+        <h2 style="margin-bottom: 20px;">呼び出し一覧</h2>
+        <div id="callList" class="call-list">
+          <p style="text-align: center; color: #999; padding: 40px 20px;">呼び出しはまだありません</p>
+        </div>
+      </div>
+    </div>
 
-      // Fetch QR codes
-      useEffect(() => {
-        fetchQrCodes();
-      }, []);
-
-      // Fetch calls
-      useEffect(() => {
-        fetchCalls();
-      }, []);
-
-      // Setup SSE for real-time updates
-      useEffect(() => {
-        const eventSource = new EventSource('/api/events');
-        eventSourceRef.current = eventSource;
-
-        eventSource.onmessage = (event) => {
-          const data = JSON.parse(event.data);
-          if (data.type === 'new_call' || data.type === 'call_updated' || data.type === 'calls_cleared') {
-            fetchCalls();
-          }
-        };
-
-        return () => {
-          eventSource.close();
-        };
-      }, []);
-
-      // Generate QR codes when they change
-      useEffect(() => {
-        const generateAll = async () => {
-          for (const code of qrCodes) {
-            await generateQrImage(code.id);
-          }
-        };
-        generateAll();
-      }, [qrCodes]);
-
-      const fetchQrCodes = async () => {
-        try {
-          const response = await fetch('/api/qr-codes');
-          const data = await response.json();
-          setQrCodes(data);
-          if (data.length > 0 && !selectedQrId) {
-            setSelectedQrId(data[0].id);
-          }
-        } catch (error) {
-          console.error('Error fetching QR codes:', error);
-          showMessage('QRコード取得エラー', 'error');
-        }
-      };
-
-      const fetchCalls = async () => {
-        try {
-          const response = await fetch('/api/calls');
-          const data = await response.json();
-          setCalls(data);
-        } catch (error) {
-          console.error('Error fetching calls:', error);
-        }
-      };
-
-      const createQrCode = async () => {
-        if (!newQrName.trim()) {
-          showMessage('QRコード名を入力してください', 'error');
-          return;
-        }
-
-        try {
-          const response = await fetch('/api/qr-codes', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: newQrName }),
-          });
-
-          if (!response.ok) throw new Error('Failed to create QR code');
-
-          const newCode = await response.json();
-          setQrCodes([...qrCodes, newCode]);
-          setNewQrName('');
-          showMessage('QRコードを作成しました', 'success');
-        } catch (error) {
-          console.error('Error creating QR code:', error);
-          showMessage('QRコード作成エラー', 'error');
-        }
-      };
-
-      const generateQrImage = async (qrCodeId) => {
-        const element = document.getElementById(`qr-${qrCodeId}`);
-        if (element && !qrRefs.current[qrCodeId]) {
-          try {
-            // Wait for QRCode library to be available
-            await waitForQRCode();
-            
-            if (typeof window.QRCode === 'undefined') {
-              console.error('QRCode library not loaded');
-              return;
-            }
-            
-            element.innerHTML = '';
-            window.QRCode.toCanvas(element, qrCodeId, { width: 200 }, (error) => {
-              if (error) {
-                console.error('QR Code generation error:', error);
-              } else {
-                qrRefs.current[qrCodeId] = true;
-              }
-            });
-          } catch (error) {
-            console.error('Error generating QR code:', error);
-          }
-        }
-      };
-
-      const submitCall = async () => {
-        if (!selectedQrId || !customLocation.trim()) {
-          showMessage('QRコードと場所名を選択してください', 'error');
-          return;
-        }
-
-        try {
-          const response = await fetch('/api/calls', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              qrCodeId: selectedQrId,
-              locationName: customLocation,
-            }),
-          });
-
-          if (!response.ok) throw new Error('Failed to create call');
-
-          setCustomLocation('');
-          showMessage('スタッフを呼び出しました！', 'success');
-          playNotificationSound();
-        } catch (error) {
-          console.error('Error submitting call:', error);
-          showMessage('呼び出しエラー', 'error');
-        }
-      };
-
-      const updateCallStatus = async (callId, status) => {
-        try {
-          const response = await fetch(`/api/calls/${callId}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status }),
-          });
-
-          if (!response.ok) throw new Error('Failed to update call');
-
-          playNotificationSound();
-        } catch (error) {
-          console.error('Error updating call:', error);
-          showMessage('ステータス更新エラー', 'error');
-        }
-      };
-
-      const deleteAllCalls = async () => {
-        if (!confirm('すべての呼び出し履歴を削除してもよろしいですか？')) return;
-
-        try {
-          const response = await fetch('/api/calls', {
-            method: 'DELETE',
-          });
-
-          if (!response.ok) throw new Error('Failed to delete calls');
-
-          showMessage('呼び出し履歴を削除しました', 'success');
-        } catch (error) {
-          console.error('Error deleting calls:', error);
-          showMessage('削除エラー', 'error');
-        }
-      };
-
-      const handlePasswordSubmit = (e) => {
-        e.preventDefault();
-        if (password === 'nanaehama2611') {
-          setIsAuthenticated(true);
-          setPassword('');
-          showMessage('ログインしました', 'success');
-        } else {
-          showMessage('パスワードが間違っています', 'error');
-          setPassword('');
-        }
-      };
-
-      const handleLogout = () => {
-        setIsAuthenticated(false);
-        setActiveTab('customer');
-        showMessage('ログアウトしました', 'info');
-      };
-
-      const startCamera = async () => {
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: 'environment' },
-          });
-          if (videoRef.current) {
-            videoRef.current.srcObject = stream;
-            setIsCameraActive(true);
-            scanQrCode();
-          }
-        } catch (error) {
-          console.error('Error accessing camera:', error);
-          showMessage('カメラへのアクセスが拒否されました', 'error');
-        }
-      };
-
-      const stopCamera = () => {
-        if (videoRef.current && videoRef.current.srcObject) {
-          const tracks = videoRef.current.srcObject.getTracks();
-          tracks.forEach((track) => track.stop());
-          setIsCameraActive(false);
-        }
-      };
-
-      const scanQrCode = () => {
-        if (!isCameraActive || !videoRef.current || !canvasRef.current) return;
-
-        const canvas = canvasRef.current;
-        const context = canvas.getContext('2d');
-        const video = videoRef.current;
-
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-        const code = jsQR(imageData.data, imageData.width, imageData.height);
-
-        if (code) {
-          setSelectedQrId(code.data);
-          stopCamera();
-          showMessage(`QRコードをスキャンしました: ${code.data}`, 'success');
-        } else {
-          requestAnimationFrame(scanQrCode);
-        }
-      };
-
-      const playNotificationSound = () => {
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        const oscillator = audioContext.createOscillator();
-        const gainNode = audioContext.createGain();
-
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-
-        oscillator.frequency.value = 800;
-        oscillator.type = 'sine';
-
-        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-
-        oscillator.start(audioContext.currentTime);
-        oscillator.stop(audioContext.currentTime + 0.5);
-      };
-
-      const showMessage = (text, type) => {
-        setMessage({ text, type });
-        setTimeout(() => setMessage(''), 3000);
-      };
-
-      // Password login screen
-      if ((activeTab === 'staff' || activeTab === 'admin') && !isAuthenticated) {
-        return (
-          <div className="container">
-            <div className="header">
-              <h1>🎯 スタッフコール</h1>
-              <p>QRコードをスキャンして店員を呼び出す</p>
-            </div>
-
-            {message && (
-              <div className={`alert alert-${message.type}`}>
-                {message.text}
-              </div>
-            )}
-
-            <div className="login-container">
-              <h2>🔐 パスワードでログイン</h2>
-              <form onSubmit={handlePasswordSubmit}>
-                <div className="form-group">
-                  <label>パスワード</label>
-                  <input
-                    type="password"
-                    placeholder="パスワードを入力"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    autoFocus
-                  />
-                </div>
-                <button type="submit" className="button button-primary" style={{ width: '100%' }}>
-                  ログイン
-                </button>
-              </form>
-              <button
-                className="button button-secondary logout-button"
-                onClick={() => {
-                  setActiveTab('customer');
-                  setPassword('');
-                }}
-              >
-                キャンセル
-              </button>
-            </div>
+    <!-- 管理者タブ -->
+    <div id="admin-tab" class="tab-content">
+      <div class="grid">
+        <div class="card">
+          <h2 style="margin-bottom: 20px;">新しいQRコードを作成</h2>
+          <div class="form-group">
+            <label>QRコード名</label>
+            <input type="text" id="qrNameInput" placeholder="例: テーブル1, 売場A">
           </div>
-        );
+          <button class="button button-primary" onclick="createQRCode()" style="width: 100%;">+ 作成</button>
+        </div>
+        <div class="card">
+          <h2 style="margin-bottom: 20px;">QRコード一覧</h2>
+          <div id="qrList"></div>
+        </div>
+      </div>
+      <div class="card" style="margin-top: 20px;">
+        <h2 style="margin-bottom: 20px;">危険なアクション</h2>
+        <button class="button button-danger" onclick="deleteAllCalls()">🗑️ すべての呼び出し履歴を削除</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- パスワード認証モーダル -->
+  <div id="passwordModal" class="modal active">
+    <div class="modal-content">
+      <h2>🔐 パスワードでログイン</h2>
+      <input type="password" id="passwordInput" placeholder="パスワードを入力">
+      <div class="modal-buttons">
+        <button class="button button-primary" onclick="login()">ログイン</button>
+        <button class="button button-secondary" onclick="cancelLogin()">キャンセル</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = '/api';
+    let isLoggedIn = false;
+    let qrCodes = [];
+    let calls = [];
+
+    // タブ切り替え
+    function switchTab(tab) {
+      if (tab === 'admin' && !isLoggedIn) {
+        document.getElementById('passwordModal').classList.add('active');
+        return;
       }
 
-      return (
-        <div className="container">
-          <div className="header">
-            <h1>🎯 スタッフコール</h1>
-            <p>QRコードをスキャンして店員を呼び出す</p>
-          </div>
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab-button').forEach(el => el.classList.remove('active'));
+      
+      document.getElementById(tab + '-tab').classList.add('active');
+      event.target.classList.add('active');
 
-          {message && (
-            <div className={`alert alert-${message.type}`}>
-              {message.text}
-            </div>
-          )}
-
-          <div className="tabs">
-            <button
-              className={`tab-button ${activeTab === 'customer' ? 'active' : ''}`}
-              onClick={() => setActiveTab('customer')}
-            >
-              👥 顧客用
-            </button>
-            <button
-              className={`tab-button ${activeTab === 'staff' ? 'active' : ''}`}
-              onClick={() => setActiveTab('staff')}
-            >
-              📊 スタッフダッシュボード
-            </button>
-            <button
-              className={`tab-button ${activeTab === 'admin' ? 'active' : ''}`}
-              onClick={() => setActiveTab('admin')}
-            >
-              ⚙️ 管理者
-            </button>
-            {isAuthenticated && (
-              <button
-                className="button button-secondary"
-                onClick={handleLogout}
-                style={{ marginLeft: 'auto' }}
-              >
-                ログアウト
-              </button>
-            )}
-          </div>
-
-          {/* Customer Tab */}
-          <div className={`tab-content ${activeTab === 'customer' ? 'active' : ''}`}>
-            <div className="card">
-              <h2 style={{ marginBottom: '20px' }}>QRコードをスキャン</h2>
-
-              <div className="form-group">
-                <label>QRコードを選択またはスキャン</label>
-                <select
-                  value={selectedQrId}
-                  onChange={(e) => setSelectedQrId(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '10px',
-                    border: '1px solid #ddd',
-                    borderRadius: '5px',
-                  }}
-                >
-                  <option value="">-- QRコードを選択 --</option>
-                  {qrCodes.map((code) => (
-                    <option key={code.id} value={code.id}>
-                      {code.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="camera-controls">
-                <button
-                  className="button button-primary"
-                  onClick={startCamera}
-                  disabled={isCameraActive}
-                >
-                  📷 カメラでスキャン
-                </button>
-                {isCameraActive && (
-                  <button className="button button-secondary" onClick={stopCamera}>
-                    ✕ カメラを閉じる
-                  </button>
-                )}
-              </div>
-
-              {isCameraActive && (
-                <div className="video-container">
-                  <video ref={videoRef} autoPlay playsInline />
-                  <canvas ref={canvasRef} style={{ display: 'none' }} />
-                </div>
-              )}
-
-              <div className="form-group">
-                <label>場所名を入力</label>
-                <input
-                  type="text"
-                  placeholder="例: テーブル1, 売場A, レジ"
-                  value={customLocation}
-                  onChange={(e) => setCustomLocation(e.target.value)}
-                />
-              </div>
-
-              <button className="button button-primary" onClick={submitCall} style={{ width: '100%' }}>
-                🔔 スタッフを呼び出す
-              </button>
-            </div>
-          </div>
-
-          {/* Staff Dashboard Tab */}
-          <div className={`tab-content ${activeTab === 'staff' ? 'active' : ''}`}>
-            <div className="card">
-              <h2 style={{ marginBottom: '20px' }}>呼び出し一覧</h2>
-              <div className="call-list">
-                {calls.length === 0 ? (
-                  <p style={{ textAlign: 'center', color: '#999', padding: '40px 20px' }}>
-                    呼び出しはまだありません
-                  </p>
-                ) : (
-                  calls.map((call) => (
-                    <div key={call.id} className={`call-item ${call.status}`}>
-                      <div className="call-header">
-                        <div className="call-location">{call.location_name}</div>
-                        <span className={`call-status status-${call.status}`}>
-                          {call.status === 'pending' ? '待機中' : '対応済み'}
-                        </span>
-                      </div>
-                      <div className="call-time">
-                        {new Date(call.created_at).toLocaleString('ja-JP')}
-                      </div>
-                      <div className="call-actions">
-                        {call.status === 'pending' && (
-                          <button
-                            className="button button-success"
-                            onClick={() => updateCallStatus(call.id, 'resolved')}
-                          >
-                            ✓ 対応完了
-                          </button>
-                        )}
-                        {call.status === 'resolved' && (
-                          <button
-                            className="button button-secondary"
-                            onClick={() => updateCallStatus(call.id, 'pending')}
-                          >
-                            ↺ 再度待機中に
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Admin Tab */}
-          <div className={`tab-content ${activeTab === 'admin' ? 'active' : ''}`}>
-            <div className="grid">
-              <div className="card">
-                <h2 style={{ marginBottom: '20px' }}>新しいQRコードを作成</h2>
-                <div className="form-group">
-                  <label>QRコード名</label>
-                  <input
-                    type="text"
-                    placeholder="例: テーブル1, 売場A"
-                    value={newQrName}
-                    onChange={(e) => setNewQrName(e.target.value)}
-                  />
-                </div>
-                <button className="button button-primary" onClick={createQrCode} style={{ width: '100%' }}>
-                  + 作成
-                </button>
-              </div>
-
-              <div className="card">
-                <h2 style={{ marginBottom: '20px' }}>QRコード一覧</h2>
-                {qrCodes.map((code) => (
-                  <div key={code.id} style={{ marginBottom: '20px' }}>
-                    <div style={{ marginBottom: '10px' }}>
-                      <strong>{code.name}</strong>
-                      <div style={{ fontSize: '12px', color: '#666' }}>ID: {code.id}</div>
-                    </div>
-                    <div id={`qr-${code.id}`} className="qr-container" />
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="card" style={{ marginTop: '20px' }}>
-              <h2 style={{ marginBottom: '20px' }}>危険なアクション</h2>
-              <button className="button button-danger" onClick={deleteAllCalls} style={{ width: '100%' }}>
-                🗑️ すべての呼び出し履歴を削除
-              </button>
-            </div>
-          </div>
-        </div>
-      );
+      if (tab === 'staff') {
+        loadCalls();
+      } else if (tab === 'admin') {
+        loadQRCodes();
+      }
     }
 
-    ReactDOM.render(<App />, document.getElementById('root'));
+    // ログイン
+    function login() {
+      const password = document.getElementById('passwordInput').value;
+      if (password === 'nanaehama2611') {
+        isLoggedIn = true;
+        document.getElementById('passwordModal').classList.remove('active');
+        document.getElementById('logoutBtn').style.display = 'block';
+        loadQRCodes();
+      } else {
+        alert('パスワードが間違っています');
+      }
+    }
+
+    function cancelLogin() {
+      document.getElementById('passwordInput').value = '';
+      document.getElementById('passwordModal').classList.remove('active');
+    }
+
+    function logout() {
+      isLoggedIn = false;
+      document.getElementById('logoutBtn').style.display = 'none';
+      document.getElementById('passwordInput').value = '';
+      switchTab('customer');
+    }
+
+    // QRコード取得
+    async function loadQRCodes() {
+      try {
+        const response = await fetch(API_URL + '/qr-codes');
+        qrCodes = await response.json();
+        
+        // 顧客用セレクトを更新
+        const select = document.getElementById('qrSelect');
+        select.innerHTML = '<option value="">-- QRコードを選択 --</option>';
+        qrCodes.forEach(code => {
+          const option = document.createElement('option');
+          option.value = code.id;
+          option.textContent = code.name;
+          select.appendChild(option);
+        });
+
+        // 管理者用リストを更新
+        const qrList = document.getElementById('qrList');
+        qrList.innerHTML = '';
+        qrCodes.forEach(code => {
+          const div = document.createElement('div');
+          div.style.marginBottom = '20px';
+          
+          const nameDiv = document.createElement('div');
+          nameDiv.style.marginBottom = '10px';
+          
+          const strong = document.createElement('strong');
+          strong.textContent = code.name;
+          nameDiv.appendChild(strong);
+          
+          const idDiv = document.createElement('div');
+          idDiv.style.fontSize = '12px';
+          idDiv.style.color = '#666';
+          idDiv.textContent = 'ID: ' + code.id;
+          nameDiv.appendChild(idDiv);
+          
+          const qrContainer = document.createElement('div');
+          qrContainer.id = 'qr-' + code.id;
+          qrContainer.className = 'qr-container';
+          
+          div.appendChild(nameDiv);
+          div.appendChild(qrContainer);
+          qrList.appendChild(div);
+          
+          // QRコード生成
+          generateQRCode(code.id, qrContainer);
+        });
+      } catch (error) {
+        console.error('Error loading QR codes:', error);
+      }
+    }
+
+    // QRコード生成
+    function generateQRCode(text, container) {
+      // 既存の内容をクリア
+      container.innerHTML = '';
+      
+      // QRコード生成
+      try {
+        new QRCode(container, {
+          text: text,
+          width: 200,
+          height: 200,
+          colorDark: '#000000',
+          colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.H
+        });
+      } catch (error) {
+        console.error('QR Code generation error:', error);
+        container.innerHTML = '<p style="color: red;">QRコード生成エラー</p>';
+      }
+    }
+
+    // QRコード作成
+    async function createQRCode() {
+      const name = document.getElementById('qrNameInput').value;
+      if (!name) {
+        alert('QRコード名を入力してください');
+        return;
+      }
+
+      try {
+        const response = await fetch(API_URL + '/qr-codes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name })
+        });
+        
+        if (response.ok) {
+          document.getElementById('qrNameInput').value = '';
+          loadQRCodes();
+          alert('QRコードを作成しました');
+        }
+      } catch (error) {
+        console.error('Error creating QR code:', error);
+      }
+    }
+
+    // 呼び出し
+    async function callStaff() {
+      const qrCodeId = document.getElementById('qrSelect').value;
+      const location = document.getElementById('locationInput').value;
+      
+      if (!qrCodeId) {
+        alert('QRコードを選択してください');
+        return;
+      }
+
+      try {
+        const response = await fetch(API_URL + '/calls', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ qrCodeId, location })
+        });
+        
+        if (response.ok) {
+          document.getElementById('locationInput').value = '';
+          alert('スタッフを呼び出しました');
+          playNotificationSound();
+        }
+      } catch (error) {
+        console.error('Error calling staff:', error);
+      }
+    }
+
+    // 呼び出し一覧取得
+    async function loadCalls() {
+      try {
+        const response = await fetch(API_URL + '/calls');
+        calls = await response.json();
+        
+        const callList = document.getElementById('callList');
+        if (calls.length === 0) {
+          callList.innerHTML = '<p style="text-align: center; color: #999; padding: 40px 20px;">呼び出しはまだありません</p>';
+        } else {
+          callList.innerHTML = '';
+          calls.forEach(call => {
+            const div = document.createElement('div');
+            div.className = 'call-item';
+            
+            const location = document.createElement('div');
+            location.className = 'call-item-location';
+            location.textContent = call.location || '場所未指定';
+            
+            const time = document.createElement('div');
+            time.className = 'call-item-time';
+            time.textContent = new Date(call.createdAt).toLocaleString('ja-JP');
+            
+            div.appendChild(location);
+            div.appendChild(time);
+            callList.appendChild(div);
+          });
+        }
+      } catch (error) {
+        console.error('Error loading calls:', error);
+      }
+    }
+
+    // すべての呼び出し履歴を削除
+    async function deleteAllCalls() {
+      if (!confirm('本当にすべての呼び出し履歴を削除しますか？')) {
+        return;
+      }
+
+      try {
+        const response = await fetch(API_URL + '/calls', {
+          method: 'DELETE'
+        });
+        
+        if (response.ok) {
+          loadCalls();
+          alert('呼び出し履歴を削除しました');
+        }
+      } catch (error) {
+        console.error('Error deleting calls:', error);
+      }
+    }
+
+    // 通知音再生
+    function playNotificationSound() {
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.value = 800;
+      oscillator.type = 'sine';
+      
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.5);
+    }
+
+    // カメラスキャン（簡易版）
+    function startCamera() {
+      alert('カメラ機能はこのバージョンでは利用できません');
+    }
+
+    // 初期化
+    window.addEventListener('load', () => {
+      loadQRCodes();
+    });
   </script>
 </body>
 </html>
