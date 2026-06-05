@@ -169,13 +169,14 @@
     .qr-container {
       text-align: center;
       padding: 20px;
-    }
-
-    #qrcode {
-      display: inline-block;
-      padding: 20px;
       background: white;
       border-radius: 10px;
+      border: 1px solid #ddd;
+    }
+
+    .qr-canvas {
+      max-width: 100%;
+      height: auto;
     }
 
     .call-list {
@@ -305,6 +306,26 @@
       gap: 20px;
     }
 
+    .login-container {
+      max-width: 400px;
+      margin: 60px auto;
+      background: white;
+      padding: 40px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .login-container h2 {
+      text-align: center;
+      margin-bottom: 30px;
+      color: #333;
+    }
+
+    .logout-button {
+      margin-top: 20px;
+      width: 100%;
+    }
+
     @media (max-width: 768px) {
       .header h1 {
         font-size: 20px;
@@ -340,9 +361,12 @@
       const [selectedQrId, setSelectedQrId] = useState('');
       const [message, setMessage] = useState('');
       const [isCameraActive, setIsCameraActive] = useState(false);
+      const [isAuthenticated, setIsAuthenticated] = useState(false);
+      const [password, setPassword] = useState('');
       const videoRef = useRef(null);
       const canvasRef = useRef(null);
       const eventSourceRef = useRef(null);
+      const qrRefs = useRef({});
 
       // Fetch QR codes
       useEffect(() => {
@@ -370,6 +394,13 @@
           eventSource.close();
         };
       }, []);
+
+      // Generate QR codes when they change
+      useEffect(() => {
+        qrCodes.forEach((code) => {
+          generateQrImage(code.id);
+        });
+      }, [qrCodes]);
 
       const fetchQrCodes = async () => {
         try {
@@ -422,11 +453,18 @@
 
       const generateQrImage = (qrCodeId) => {
         const element = document.getElementById(`qr-${qrCodeId}`);
-        if (element) {
-          element.innerHTML = '';
-          QRCode.toCanvas(element, qrCodeId, { width: 200 }, (error) => {
-            if (error) console.error(error);
-          });
+        if (element && !qrRefs.current[qrCodeId]) {
+          try {
+            QRCode.toCanvas(element, qrCodeId, { width: 200 }, (error) => {
+              if (error) {
+                console.error('QR Code generation error:', error);
+              } else {
+                qrRefs.current[qrCodeId] = true;
+              }
+            });
+          } catch (error) {
+            console.error('Error generating QR code:', error);
+          }
         }
       };
 
@@ -489,6 +527,24 @@
           console.error('Error deleting calls:', error);
           showMessage('削除エラー', 'error');
         }
+      };
+
+      const handlePasswordSubmit = (e) => {
+        e.preventDefault();
+        if (password === 'nanaehama2611') {
+          setIsAuthenticated(true);
+          setPassword('');
+          showMessage('ログインしました', 'success');
+        } else {
+          showMessage('パスワードが間違っています', 'error');
+          setPassword('');
+        }
+      };
+
+      const handleLogout = () => {
+        setIsAuthenticated(false);
+        setActiveTab('customer');
+        showMessage('ログアウトしました', 'info');
       };
 
       const startCamera = async () => {
@@ -561,6 +617,52 @@
         setTimeout(() => setMessage(''), 3000);
       };
 
+      // Password login screen
+      if ((activeTab === 'staff' || activeTab === 'admin') && !isAuthenticated) {
+        return (
+          <div className="container">
+            <div className="header">
+              <h1>🎯 スタッフコール</h1>
+              <p>QRコードをスキャンして店員を呼び出す</p>
+            </div>
+
+            {message && (
+              <div className={`alert alert-${message.type}`}>
+                {message.text}
+              </div>
+            )}
+
+            <div className="login-container">
+              <h2>🔐 パスワードでログイン</h2>
+              <form onSubmit={handlePasswordSubmit}>
+                <div className="form-group">
+                  <label>パスワード</label>
+                  <input
+                    type="password"
+                    placeholder="パスワードを入力"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    autoFocus
+                  />
+                </div>
+                <button type="submit" className="button button-primary" style={{ width: '100%' }}>
+                  ログイン
+                </button>
+              </form>
+              <button
+                className="button button-secondary logout-button"
+                onClick={() => {
+                  setActiveTab('customer');
+                  setPassword('');
+                }}
+              >
+                キャンセル
+              </button>
+            </div>
+          </div>
+        );
+      }
+
       return (
         <div className="container">
           <div className="header">
@@ -593,6 +695,15 @@
             >
               ⚙️ 管理者
             </button>
+            {isAuthenticated && (
+              <button
+                className="button button-secondary"
+                onClick={handleLogout}
+                style={{ marginLeft: 'auto' }}
+              >
+                ログアウト
+              </button>
+            )}
           </div>
 
           {/* Customer Tab */}
@@ -733,8 +844,6 @@
                       <div style={{ fontSize: '12px', color: '#666' }}>ID: {code.id}</div>
                     </div>
                     <div id={`qr-${code.id}`} className="qr-container" />
-                    {typeof document !== 'undefined' &&
-                      setTimeout(() => generateQrImage(code.id), 0)}
                   </div>
                 ))}
               </div>
