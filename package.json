@@ -6,8 +6,8 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "node --loader tsx server.ts",
-    "build": "tsc && esbuild dist/server.js --bundle --platform=node --outfile=dist/server-bundle.js",
-    "start": "node dist/server-bundle.js",
+    "build": "npx esbuild server.ts --bundle --platform=node --packages=external --format=esm --outfile=dist/server.js",
+    "start": "node dist/server.js",
     "dev:simple": "tsx server.ts"
   },
   "dependencies": {
