@@ -352,6 +352,23 @@
   <script type="text/babel">
     const { useState, useEffect, useRef } = React;
 
+    // Wait for QRCode library to load
+    const waitForQRCode = () => {
+      return new Promise((resolve) => {
+        if (typeof window.QRCode !== 'undefined') {
+          resolve();
+        } else {
+          const checkInterval = setInterval(() => {
+            if (typeof window.QRCode !== 'undefined') {
+              clearInterval(checkInterval);
+              resolve();
+            }
+          }, 100);
+          setTimeout(() => clearInterval(checkInterval), 5000);
+        }
+      });
+    };
+
     function App() {
       const [activeTab, setActiveTab] = useState('customer');
       const [qrCodes, setQrCodes] = useState([]);
@@ -397,9 +414,12 @@
 
       // Generate QR codes when they change
       useEffect(() => {
-        qrCodes.forEach((code) => {
-          generateQrImage(code.id);
-        });
+        const generateAll = async () => {
+          for (const code of qrCodes) {
+            await generateQrImage(code.id);
+          }
+        };
+        generateAll();
       }, [qrCodes]);
 
       const fetchQrCodes = async () => {
@@ -451,11 +471,20 @@
         }
       };
 
-      const generateQrImage = (qrCodeId) => {
+      const generateQrImage = async (qrCodeId) => {
         const element = document.getElementById(`qr-${qrCodeId}`);
         if (element && !qrRefs.current[qrCodeId]) {
           try {
-            QRCode.toCanvas(element, qrCodeId, { width: 200 }, (error) => {
+            // Wait for QRCode library to be available
+            await waitForQRCode();
+            
+            if (typeof window.QRCode === 'undefined') {
+              console.error('QRCode library not loaded');
+              return;
+            }
+            
+            element.innerHTML = '';
+            window.QRCode.toCanvas(element, qrCodeId, { width: 200 }, (error) => {
               if (error) {
                 console.error('QR Code generation error:', error);
               } else {
