@@ -85,10 +85,11 @@ app.get('/api/qr-codes/:id', async (req: Request, res: Response) => {
 // Create staff call
 app.post('/api/calls', async (req: Request, res: Response) => {
   try {
-    const { qrCodeId, locationName } = req.body;
+    const { qrCodeId, location, locationName } = req.body;
+    const finalLocation = location || locationName;
 
-    if (!qrCodeId || !locationName) {
-      res.status(400).json({ error: 'qrCodeId and locationName are required' });
+    if (!qrCodeId || !finalLocation) {
+      res.status(400).json({ error: 'qrCodeId and location are required' });
       return;
     }
 
@@ -100,13 +101,13 @@ app.post('/api/calls', async (req: Request, res: Response) => {
     }
 
     const callId = uuidv4();
-    await addStaffCall(callId, qrCodeId, locationName);
+    await addStaffCall(callId, qrCodeId, finalLocation);
 
     // Broadcast to all connected clients
     const callData = {
       id: callId,
       qr_code_id: qrCodeId,
-      location_name: locationName,
+      location_name: finalLocation,
       status: 'pending',
       created_at: new Date().toISOString(),
     };
