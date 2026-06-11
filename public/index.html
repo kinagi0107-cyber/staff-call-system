@@ -246,7 +246,7 @@
       background: #f0f0f0;
       color: #333;
     }
-    .processing-screen {
+    .overlay-screen {
       display: none;
       position: fixed;
       top: 0;
@@ -258,20 +258,25 @@
       align-items: center;
       z-index: 1001;
     }
-    .processing-screen.active {
+    .overlay-screen.active {
       display: flex;
     }
-    .processing-content {
+    .overlay-content {
       background: white;
       padding: 40px;
       border-radius: 15px;
       text-align: center;
       max-width: 400px;
     }
-    .processing-content h2 {
+    .overlay-content h2 {
       font-size: 24px;
       margin-bottom: 20px;
       color: #667eea;
+    }
+    .overlay-content p {
+      font-size: 16px;
+      color: #666;
+      margin-bottom: 20px;
     }
     .spinner {
       border: 4px solid #f3f3f3;
@@ -296,8 +301,8 @@
     </div>
 
     <div class="tabs">
-      <button class="tab-button active" onclick="switchTab('staff')">📊 スタッフダッシュボード</button>
-      <button class="tab-button" onclick="switchTab('admin')">⚙️ 管理者</button>
+      <button class="tab-button active" onclick="switchTab(event, 'staff')">📊 スタッフダッシュボード</button>
+      <button class="tab-button" onclick="switchTab(event, 'admin')">⚙️ 管理者</button>
       <button class="button button-secondary" onclick="logout()" id="logoutBtn" style="display: none;">ログアウト</button>
     </div>
 
@@ -335,9 +340,18 @@
   </div>
 
   <!-- 処理中画面 -->
-  <div id="processingScreen" class="processing-screen">
-    <div class="processing-content">
+  <div id="processingScreen" class="overlay-screen">
+    <div class="overlay-content">
       <h2>処理中...</h2>
+      <div class="spinner"></div>
+    </div>
+  </div>
+
+  <!-- 完了画面 -->
+  <div id="completionScreen" class="overlay-screen">
+    <div class="overlay-content">
+      <h2>✅ 呼び出し完了</h2>
+      <p>しばらくお待ちください。</p>
       <div class="spinner"></div>
     </div>
   </div>
@@ -362,7 +376,7 @@
     let eventSource = null;
 
     // タブ切り替え
-    function switchTab(tab) {
+    function switchTab(event, tab) {
       if (tab === 'admin' && !isLoggedIn) {
         document.getElementById('passwordModal').classList.add('active');
         return;
@@ -403,7 +417,10 @@
       isLoggedIn = false;
       document.getElementById('logoutBtn').style.display = 'none';
       document.getElementById('passwordInput').value = '';
-      switchTab('staff');
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab-button').forEach(el => el.classList.remove('active'));
+      document.getElementById('staff-tab').classList.add('active');
+      document.querySelector('.tab-button').classList.add('active');
     }
 
     // QRコード取得
@@ -439,13 +456,19 @@
           const copyBtn = document.createElement('button');
           copyBtn.className = 'button button-secondary';
           copyBtn.textContent = 'リンクをコピー';
-          copyBtn.onclick = () => copyToClipboard(`${window.location.origin}?call=${code.id}`);
+          copyBtn.type = 'button';
+          copyBtn.addEventListener('click', function() {
+            copyToClipboard(window.location.origin + '?call=' + code.id);
+          });
           actions.appendChild(copyBtn);
           
           const testBtn = document.createElement('button');
           testBtn.className = 'button button-primary';
           testBtn.textContent = 'テスト呼び出し';
-          testBtn.onclick = () => testCall(code.id, code.name);
+          testBtn.type = 'button';
+          testBtn.addEventListener('click', function() {
+            testCall(code.id, code.name);
+          });
           actions.appendChild(testBtn);
           
           div.appendChild(actions);
@@ -453,7 +476,7 @@
           qrList.appendChild(div);
           
           // QRコードを生成
-          generateQrImage('qr-' + code.id, `${window.location.origin}?call=${code.id}`);
+          generateQrImage('qr-' + code.id, window.location.origin + '?call=' + code.id);
         });
       } catch (error) {
         console.error('Error fetching QR codes:', error);
@@ -516,12 +539,16 @@
       eventSource = new EventSource(API_URL + '/updates');
       
       eventSource.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        if (data.type === 'new-call') {
-          // 新しい呼び出しがある場合
-          loadCalls();
-          playNotificationSound();
-          showNotification('新しい呼び出し', data.call.location_name || '場所未指定');
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === 'new-call') {
+            // 新しい呼び出しがある場合
+            loadCalls();
+            playNotificationSound();
+            showNotification('新しい呼び出し', data.call.location_name || '場所未指定');
+          }
+        } catch (e) {
+          console.error('Error parsing SSE message:', e);
         }
       };
       
@@ -610,32 +637,40 @@
 
     // 通知音再生
     function playNotificationSound() {
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-      
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-      
-      oscillator.frequency.value = 800;
-      oscillator.type = 'sine';
-      
-      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-      
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + 0.5);
+      try {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.frequency.value = 800;
+        oscillator.type = 'sine';
+        
+        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+        
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.5);
+      } catch (e) {
+        console.error('Error playing notification sound:', e);
+      }
     }
 
     // クリップボードにコピー
     function copyToClipboard(text) {
       navigator.clipboard.writeText(text).then(() => {
         alert('リンクをコピーしました');
+      }).catch(err => {
+        console.error('Failed to copy:', err);
       });
     }
 
     // テスト呼び出し
     async function testCall(qrCodeId, qrCodeName) {
+      console.log('Test call triggered for:', qrCodeId, qrCodeName);
+      
       try {
         const response = await fetch(API_URL + '/calls', {
           method: 'POST',
@@ -647,9 +682,12 @@
         });
         
         if (response.ok) {
+          console.log('Test call created successfully');
           playNotificationSound();
-          alert('テスト呼び出しを作成しました');
           loadCalls();
+          alert('テスト呼び出しを作成しました');
+        } else {
+          console.error('Failed to create test call:', response.status);
         }
       } catch (error) {
         console.error('Error creating test call:', error);
@@ -662,6 +700,8 @@
       const callId = params.get('call');
       
       if (callId) {
+        console.log('Handling call from URL:', callId);
+        
         // 処理中画面を表示
         document.getElementById('processingScreen').classList.add('active');
         
@@ -670,6 +710,7 @@
           const qrResponse = await fetch(API_URL + '/qr-codes/' + callId);
           if (qrResponse.ok) {
             const qrCode = await qrResponse.json();
+            console.log('QR code found:', qrCode);
             
             // 呼び出しを作成
             const callResponse = await fetch(API_URL + '/calls', {
@@ -682,11 +723,18 @@
             });
             
             if (callResponse.ok) {
+              console.log('Call created successfully');
               playNotificationSound();
               
-              // 1秒待機後、ページを閉じるか戻る
+              // 処理中画面を非表示
+              document.getElementById('processingScreen').classList.remove('active');
+              
+              // 完了画面を表示
+              document.getElementById('completionScreen').classList.add('active');
+              
+              // 3秒後にページを閉じる
               setTimeout(() => {
-                document.getElementById('processingScreen').classList.remove('active');
+                document.getElementById('completionScreen').classList.remove('active');
                 
                 // ブラウザの戻るボタンで戻る、またはウィンドウを閉じる
                 if (window.history.length > 1) {
@@ -694,8 +742,14 @@
                 } else {
                   window.close();
                 }
-              }, 1000);
+              }, 3000);
+            } else {
+              console.error('Failed to create call:', callResponse.status);
+              document.getElementById('processingScreen').classList.remove('active');
             }
+          } else {
+            console.error('QR code not found:', qrResponse.status);
+            document.getElementById('processingScreen').classList.remove('active');
           }
         } catch (error) {
           console.error('Error handling call from URL:', error);
@@ -706,6 +760,7 @@
 
     // 初期化
     window.addEventListener('load', () => {
+      console.log('Page loaded');
       loadCalls();
       
       // ブラウザ通知の許可をリクエスト
