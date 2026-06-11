@@ -183,19 +183,15 @@
       padding: 10px;
       background: white;
     }
-    .qr-link {
-      display: inline-block;
+    .qr-actions {
+      display: flex;
+      gap: 10px;
       margin-top: 10px;
-      padding: 8px 12px;
-      background: #667eea;
-      color: white;
-      border-radius: 5px;
-      text-decoration: none;
-      font-size: 12px;
-      cursor: pointer;
     }
-    .qr-link:hover {
-      background: #5568d3;
+    .qr-actions button {
+      flex: 1;
+      padding: 8px;
+      font-size: 12px;
     }
     .modal {
       display: none;
@@ -250,37 +246,32 @@
       background: #f0f0f0;
       color: #333;
     }
-    .confirmation-screen {
+    .processing-screen {
       display: none;
       position: fixed;
       top: 0;
       left: 0;
       right: 0;
       bottom: 0;
-      background: rgba(0, 0, 0, 0.5);
+      background: rgba(0, 0, 0, 0.7);
       justify-content: center;
       align-items: center;
       z-index: 1001;
     }
-    .confirmation-screen.active {
+    .processing-screen.active {
       display: flex;
     }
-    .confirmation-content {
+    .processing-content {
       background: white;
       padding: 40px;
       border-radius: 15px;
       text-align: center;
       max-width: 400px;
     }
-    .confirmation-content h2 {
+    .processing-content h2 {
       font-size: 24px;
       margin-bottom: 20px;
       color: #667eea;
-    }
-    .confirmation-content p {
-      font-size: 16px;
-      color: #666;
-      margin-bottom: 30px;
     }
     .spinner {
       border: 4px solid #f3f3f3;
@@ -343,13 +334,11 @@
     </div>
   </div>
 
-  <!-- 呼び出し確認画面 -->
-  <div id="confirmationScreen" class="confirmation-screen">
-    <div class="confirmation-content">
-      <h2>✅ 店員を呼び出しました</h2>
-      <p>その場でしばらくお待ちくださいませ。</p>
+  <!-- 処理中画面 -->
+  <div id="processingScreen" class="processing-screen">
+    <div class="processing-content">
+      <h2>処理中...</h2>
       <div class="spinner"></div>
-      <p id="confirmationLocation" style="margin-top: 20px; font-size: 14px; color: #999;"></p>
     </div>
   </div>
 
@@ -371,12 +360,6 @@
     let qrCodes = [];
     let calls = [];
     let eventSource = null;
-
-    // URL パラメータから呼び出しIDを取得
-    function getCallIdFromURL() {
-      const params = new URLSearchParams(window.location.search);
-      return params.get('call');
-    }
 
     // タブ切り替え
     function switchTab(tab) {
@@ -434,7 +417,7 @@
         qrList.innerHTML = '';
         qrCodes.forEach(code => {
           const div = document.createElement('div');
-          div.style.marginBottom = '20px';
+          div.style.marginBottom = '30px';
           
           const nameDiv = document.createElement('div');
           nameDiv.style.marginBottom = '10px';
@@ -449,20 +432,27 @@
           qrContainer.className = 'qr-container';
           div.appendChild(qrContainer);
           
-          // QRコードリンク
-          const qrLink = document.createElement('a');
-          qrLink.href = `${window.location.origin}?call=${code.id}`;
-          qrLink.className = 'qr-link';
-          qrLink.textContent = 'リンクをコピー';
-          qrLink.onclick = (e) => {
-            e.preventDefault();
-            copyToClipboard(`${window.location.origin}?call=${code.id}`);
-          };
-          div.appendChild(qrLink);
+          // アクションボタン
+          const actions = document.createElement('div');
+          actions.className = 'qr-actions';
+          
+          const copyBtn = document.createElement('button');
+          copyBtn.className = 'button button-secondary';
+          copyBtn.textContent = 'リンクをコピー';
+          copyBtn.onclick = () => copyToClipboard(`${window.location.origin}?call=${code.id}`);
+          actions.appendChild(copyBtn);
+          
+          const testBtn = document.createElement('button');
+          testBtn.className = 'button button-primary';
+          testBtn.textContent = 'テスト呼び出し';
+          testBtn.onclick = () => testCall(code.id, code.name);
+          actions.appendChild(testBtn);
+          
+          div.appendChild(actions);
           
           qrList.appendChild(div);
           
-          // QRコードを生成（URLスキーム付き）
+          // QRコードを生成
           generateQrImage('qr-' + code.id, `${window.location.origin}?call=${code.id}`);
         });
       } catch (error) {
@@ -644,15 +634,42 @@
       });
     }
 
+    // テスト呼び出し
+    async function testCall(qrCodeId, qrCodeName) {
+      try {
+        const response = await fetch(API_URL + '/calls', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            qrCodeId: qrCodeId, 
+            location: qrCodeName
+          })
+        });
+        
+        if (response.ok) {
+          playNotificationSound();
+          alert('テスト呼び出しを作成しました');
+          loadCalls();
+        }
+      } catch (error) {
+        console.error('Error creating test call:', error);
+      }
+    }
+
     // URL パラメータから呼び出しを処理
     async function handleCallFromURL() {
-      const callId = getCallIdFromURL();
+      const params = new URLSearchParams(window.location.search);
+      const callId = params.get('call');
+      
       if (callId) {
-        // QRコード情報を取得
+        // 処理中画面を表示
+        document.getElementById('processingScreen').classList.add('active');
+        
         try {
-          const response = await fetch(API_URL + '/qr-codes/' + callId);
-          if (response.ok) {
-            const qrCode = await response.json();
+          // QRコード情報を取得
+          const qrResponse = await fetch(API_URL + '/qr-codes/' + callId);
+          if (qrResponse.ok) {
+            const qrCode = await qrResponse.json();
             
             // 呼び出しを作成
             const callResponse = await fetch(API_URL + '/calls', {
@@ -665,30 +682,26 @@
             });
             
             if (callResponse.ok) {
-              // 確認画面を表示
-              showConfirmationScreen(qrCode.name || '場所未指定');
               playNotificationSound();
               
-              // URLをクリーン
-              window.history.replaceState({}, document.title, window.location.pathname);
+              // 1秒待機後、ページを閉じるか戻る
+              setTimeout(() => {
+                document.getElementById('processingScreen').classList.remove('active');
+                
+                // ブラウザの戻るボタンで戻る、またはウィンドウを閉じる
+                if (window.history.length > 1) {
+                  window.history.back();
+                } else {
+                  window.close();
+                }
+              }, 1000);
             }
           }
         } catch (error) {
           console.error('Error handling call from URL:', error);
+          document.getElementById('processingScreen').classList.remove('active');
         }
       }
-    }
-
-    // 確認画面を表示
-    function showConfirmationScreen(location) {
-      const confirmationScreen = document.getElementById('confirmationScreen');
-      document.getElementById('confirmationLocation').textContent = `場所: ${location}`;
-      confirmationScreen.classList.add('active');
-      
-      // 3秒後に確認画面を閉じる
-      setTimeout(() => {
-        confirmationScreen.classList.remove('active');
-      }, 3000);
     }
 
     // 初期化
