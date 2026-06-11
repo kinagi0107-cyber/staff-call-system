@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>スタッフコール - QR呼び出しシステム</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
   <style>
     * {
       margin: 0;
@@ -184,6 +183,20 @@
       padding: 10px;
       background: white;
     }
+    .qr-link {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 8px 12px;
+      background: #667eea;
+      color: white;
+      border-radius: 5px;
+      text-decoration: none;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .qr-link:hover {
+      background: #5568d3;
+    }
     .modal {
       display: none;
       position: fixed;
@@ -282,27 +295,6 @@
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
-    #qrScanner {
-      width: 100%;
-      max-width: 400px;
-      margin: 20px auto;
-      display: none;
-      background: white;
-      padding: 15px;
-      border-radius: 10px;
-    }
-    #qrVideo {
-      width: 100%;
-      border-radius: 10px;
-      margin-bottom: 15px;
-    }
-    .scanner-controls {
-      display: flex;
-      gap: 10px;
-    }
-    .scanner-controls button {
-      flex: 1;
-    }
   </style>
 </head>
 <body>
@@ -313,35 +305,13 @@
     </div>
 
     <div class="tabs">
-      <button class="tab-button active" onclick="switchTab('customer')">👥 顧客用</button>
-      <button class="tab-button" onclick="switchTab('staff')">📊 スタッフダッシュボード</button>
+      <button class="tab-button active" onclick="switchTab('staff')">📊 スタッフダッシュボード</button>
       <button class="tab-button" onclick="switchTab('admin')">⚙️ 管理者</button>
       <button class="button button-secondary" onclick="logout()" id="logoutBtn" style="display: none;">ログアウト</button>
     </div>
 
-    <!-- 顧客タブ -->
-    <div id="customer-tab" class="tab-content active">
-      <div class="card">
-        <h2 style="margin-bottom: 20px;">QRコードをスキャン</h2>
-        <div class="form-group">
-          <label>QRコードを選択またはスキャン</label>
-          <select id="qrSelect" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
-            <option value="">-- QRコードを選択 --</option>
-          </select>
-        </div>
-        <div style="margin-bottom: 15px;">
-          <button class="button button-primary" onclick="startCamera()" style="width: 100%;">📷 カメラでスキャン</button>
-        </div>
-        <div class="form-group">
-          <label>場所名を入力</label>
-          <input type="text" id="locationInput" placeholder="例: テーブル1, 売場A, レジ">
-        </div>
-        <button class="button button-primary" onclick="callStaff()" style="width: 100%;">🔔 スタッフを呼び出す</button>
-      </div>
-    </div>
-
     <!-- スタッフダッシュボード -->
-    <div id="staff-tab" class="tab-content">
+    <div id="staff-tab" class="tab-content active">
       <div class="card">
         <h2 style="margin-bottom: 20px;">呼び出し一覧</h2>
         <div id="callList" class="call-list">
@@ -373,22 +343,13 @@
     </div>
   </div>
 
-  <!-- QRコード読み取り確認画面 -->
+  <!-- 呼び出し確認画面 -->
   <div id="confirmationScreen" class="confirmation-screen">
     <div class="confirmation-content">
       <h2>✅ 店員を呼び出しました</h2>
       <p>その場でしばらくお待ちくださいませ。</p>
       <div class="spinner"></div>
       <p id="confirmationLocation" style="margin-top: 20px; font-size: 14px; color: #999;"></p>
-    </div>
-  </div>
-
-  <!-- QRコードスキャナー -->
-  <div id="qrScanner">
-    <video id="qrVideo" style="width: 100%; border-radius: 10px; margin-bottom: 15px;"></video>
-    <div class="scanner-controls">
-      <button class="button button-primary" onclick="scanQRCode()">📷 スキャン開始</button>
-      <button class="button button-secondary" onclick="closeScanner()">キャンセル</button>
     </div>
   </div>
 
@@ -409,8 +370,13 @@
     let isLoggedIn = false;
     let qrCodes = [];
     let calls = [];
-    let qrVideoStream = null;
     let eventSource = null;
+
+    // URL パラメータから呼び出しIDを取得
+    function getCallIdFromURL() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('call');
+    }
 
     // タブ切り替え
     function switchTab(tab) {
@@ -454,7 +420,7 @@
       isLoggedIn = false;
       document.getElementById('logoutBtn').style.display = 'none';
       document.getElementById('passwordInput').value = '';
-      switchTab('customer');
+      switchTab('staff');
     }
 
     // QRコード取得
@@ -463,16 +429,6 @@
         const response = await fetch(API_URL + '/qr-codes');
         qrCodes = await response.json();
         
-        // 顧客用セレクトを更新
-        const select = document.getElementById('qrSelect');
-        select.innerHTML = '<option value="">-- QRコードを選択 --</option>';
-        qrCodes.forEach(code => {
-          const option = document.createElement('option');
-          option.value = code.id;
-          option.textContent = code.name;
-          select.appendChild(option);
-        });
-
         // 管理者用リストを更新
         const qrList = document.getElementById('qrList');
         qrList.innerHTML = '';
@@ -493,10 +449,21 @@
           qrContainer.className = 'qr-container';
           div.appendChild(qrContainer);
           
+          // QRコードリンク
+          const qrLink = document.createElement('a');
+          qrLink.href = `${window.location.origin}?call=${code.id}`;
+          qrLink.className = 'qr-link';
+          qrLink.textContent = 'リンクをコピー';
+          qrLink.onclick = (e) => {
+            e.preventDefault();
+            copyToClipboard(`${window.location.origin}?call=${code.id}`);
+          };
+          div.appendChild(qrLink);
+          
           qrList.appendChild(div);
           
-          // QRコードを生成
-          generateQrImage('qr-' + code.id, code.id);
+          // QRコードを生成（URLスキーム付き）
+          generateQrImage('qr-' + code.id, `${window.location.origin}?call=${code.id}`);
         });
       } catch (error) {
         console.error('Error fetching QR codes:', error);
@@ -548,46 +515,6 @@
       } catch (error) {
         console.error('Error creating QR code:', error);
       }
-    }
-
-    // 呼び出し
-    async function callStaff() {
-      const qrCodeId = document.getElementById('qrSelect').value;
-      const location = document.getElementById('locationInput').value;
-      
-      if (!qrCodeId) {
-        alert('QRコードを選択してください');
-        return;
-      }
-
-      try {
-        const response = await fetch(API_URL + '/calls', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ qrCodeId, location })
-        });
-        
-        if (response.ok) {
-          // 確認画面を表示
-          showConfirmationScreen(location);
-          document.getElementById('locationInput').value = '';
-          playNotificationSound();
-        }
-      } catch (error) {
-        console.error('Error calling staff:', error);
-      }
-    }
-
-    // 確認画面を表示
-    function showConfirmationScreen(location) {
-      const confirmationScreen = document.getElementById('confirmationScreen');
-      document.getElementById('confirmationLocation').textContent = `場所: ${location || '場所未指定'}`;
-      confirmationScreen.classList.add('active');
-      
-      // 3秒後に確認画面を閉じる
-      setTimeout(() => {
-        confirmationScreen.classList.remove('active');
-      }, 3000);
     }
 
     // リアルタイム更新用のEventSource
@@ -710,104 +637,63 @@
       oscillator.stop(audioContext.currentTime + 0.5);
     }
 
-    // QRコードスキャナー関連
-    function startCamera() {
-      const scanner = document.getElementById('qrScanner');
-      scanner.style.display = 'block';
-      
-      const video = document.getElementById('qrVideo');
-      navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-        .then(stream => {
-          qrVideoStream = stream;
-          video.srcObject = stream;
-          video.play();
-          // スキャンを開始
-          setTimeout(scanQRCode, 500);
-        })
-        .catch(err => {
-          console.error('カメラアクセスエラー:', err);
-          alert('カメラへのアクセスが許可されていません');
-          scanner.style.display = 'none';
-        });
+    // クリップボードにコピー
+    function copyToClipboard(text) {
+      navigator.clipboard.writeText(text).then(() => {
+        alert('リンクをコピーしました');
+      });
     }
 
-    function closeScanner() {
-      if (qrVideoStream) {
-        qrVideoStream.getTracks().forEach(track => track.stop());
-        qrVideoStream = null;
-      }
-      document.getElementById('qrScanner').style.display = 'none';
-    }
-
-    async function scanQRCode() {
-      const video = document.getElementById('qrVideo');
-      
-      if (!video.srcObject) {
-        return;
-      }
-      
-      const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(video, 0, 0);
-      
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const code = jsQR(imageData.data, imageData.width, imageData.height);
-      
-      if (code) {
-        // QRコードが読み取られた
-        const qrCodeId = code.data;
-        
-        // スキャナーを閉じる
-        closeScanner();
-        
-        // QRコードをセレクトボックスに設定
-        document.getElementById('qrSelect').value = qrCodeId;
-        
-        // 確認画面を表示して呼び出し
-        showConfirmationAndCall(qrCodeId);
-      } else {
-        // 再度スキャン
-        if (qrVideoStream) {
-          setTimeout(scanQRCode, 100);
+    // URL パラメータから呼び出しを処理
+    async function handleCallFromURL() {
+      const callId = getCallIdFromURL();
+      if (callId) {
+        // QRコード情報を取得
+        try {
+          const response = await fetch(API_URL + '/qr-codes/' + callId);
+          if (response.ok) {
+            const qrCode = await response.json();
+            
+            // 呼び出しを作成
+            const callResponse = await fetch(API_URL + '/calls', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ 
+                qrCodeId: callId, 
+                location: qrCode.name || '場所未指定'
+              })
+            });
+            
+            if (callResponse.ok) {
+              // 確認画面を表示
+              showConfirmationScreen(qrCode.name || '場所未指定');
+              playNotificationSound();
+              
+              // URLをクリーン
+              window.history.replaceState({}, document.title, window.location.pathname);
+            }
+          }
+        } catch (error) {
+          console.error('Error handling call from URL:', error);
         }
       }
     }
 
-    async function showConfirmationAndCall(qrCodeId) {
-      const location = document.getElementById('locationInput').value || '場所未指定';
-      
-      // 確認画面を表示
+    // 確認画面を表示
+    function showConfirmationScreen(location) {
       const confirmationScreen = document.getElementById('confirmationScreen');
       document.getElementById('confirmationLocation').textContent = `場所: ${location}`;
       confirmationScreen.classList.add('active');
       
-      // スタッフを呼び出し
-      try {
-        const response = await fetch(API_URL + '/calls', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ qrCodeId, location })
-        });
-        
-        if (response.ok) {
-          playNotificationSound();
-          // 3秒後に確認画面を閉じる
-          setTimeout(() => {
-            confirmationScreen.classList.remove('active');
-            document.getElementById('locationInput').value = '';
-          }, 3000);
-        }
-      } catch (error) {
-        console.error('Error calling staff:', error);
+      // 3秒後に確認画面を閉じる
+      setTimeout(() => {
         confirmationScreen.classList.remove('active');
-      }
+      }, 3000);
     }
 
     // 初期化
     window.addEventListener('load', () => {
-      loadQRCodes();
+      loadCalls();
       
       // ブラウザ通知の許可をリクエスト
       if ('Notification' in window && Notification.permission === 'default') {
@@ -816,6 +702,9 @@
       
       // リアルタイム更新を開始
       startRealtimeUpdates();
+      
+      // URL パラメータから呼び出しを処理
+      handleCallFromURL();
     });
 
     // ページを離れるときはSSEを閉じる
@@ -823,7 +712,6 @@
       if (eventSource) {
         eventSource.close();
       }
-      closeScanner();
     });
   </script>
 </body>
