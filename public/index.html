@@ -493,6 +493,46 @@
       }
     }
 
+    // リアルタイム更新用のEventSource
+    let eventSource = null;
+
+    // リアルタイム更新を開始
+    function startRealtimeUpdates() {
+      if (eventSource) {
+        eventSource.close();
+      }
+      
+      eventSource = new EventSource(API_URL + '/updates');
+      
+      eventSource.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.type === 'new-call') {
+          // 新しい呼び出しがある場合
+          calls.unshift(data.call);
+          loadCalls();
+          playNotificationSound();
+          showNotification('新しい呼び出し', data.call.location || '場所未指定');
+        }
+      };
+      
+      eventSource.onerror = () => {
+        console.error('SSE connection error');
+        eventSource.close();
+        // 3秒後に再接続
+        setTimeout(startRealtimeUpdates, 3000);
+      };
+    }
+
+    // ブラウザ通知を表示
+    function showNotification(title, body) {
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification(title, {
+          body: body,
+          icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🔔</text></svg>'
+        });
+      }
+    }
+
     // 呼び出し一覧取得
     async function loadCalls() {
       try {
@@ -573,6 +613,21 @@
     // 初期化
     window.addEventListener('load', () => {
       loadQRCodes();
+      
+      // ブラウザ通知の許可をリクエスト
+      if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+      }
+      
+      // リアルタイム更新を開始
+      startRealtimeUpdates();
+    });
+
+    // ページを離れるときはSSEを閉じる
+    window.addEventListener('beforeunload', () => {
+      if (eventSource) {
+        eventSource.close();
+      }
     });
   </script>
 </body>

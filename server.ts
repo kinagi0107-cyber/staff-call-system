@@ -112,8 +112,8 @@ app.post('/api/calls', async (req: Request, res: Response) => {
     };
 
     broadcastToClients({
-      type: 'new_call',
-      data: callData,
+      type: 'new-call',
+      call: callData,
     });
 
     res.json(callData);
@@ -178,6 +178,23 @@ app.delete('/api/calls', async (req: Request, res: Response) => {
 });
 
 // Server-Sent Events for real-time updates
+// SSE endpoint for real-time updates
+app.get('/api/updates', (req: Request, res: Response) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+
+  activeConnections.add(res);
+
+  res.write('data: {"type":"connected"}\n\n');
+
+  req.on('close', () => {
+    activeConnections.delete(res);
+  });
+});
+
+// Legacy endpoint for backward compatibility
 app.get('/api/events', (req: Request, res: Response) => {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
