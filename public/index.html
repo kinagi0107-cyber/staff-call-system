@@ -634,6 +634,7 @@
         
         if (pendingCalls.length === 0) {
           callList.innerHTML = '<p style="text-align: center; color: #999; padding: 40px 20px;">呼び出しはまだありません</p>';
+          updatePendingBadge();
           return;
         }
 
@@ -685,6 +686,7 @@
           
           callList.appendChild(div);
         });
+        updatePendingBadge();
       } catch (error) {
         console.error('Error fetching calls:', error);
       }
