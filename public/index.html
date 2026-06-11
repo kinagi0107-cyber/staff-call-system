@@ -747,7 +747,7 @@
     async function markCallAsCompleted(callId) {
       try {
         const response = await fetch(API_URL + '/calls/' + callId, {
-          method: 'PUT',
+          method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ status: 'completed' })
         });
