@@ -476,10 +476,11 @@
         const response = await fetch(API_URL + '/qr-codes');
         qrCodes = await response.json();
         
-        // 管理者用リストを更新
+        // 管理者用リストを更新（最新3件のみ表示）
         const qrList = document.getElementById('qrList');
         qrList.innerHTML = '';
-        qrCodes.forEach(code => {
+        const recentQRCodes = qrCodes.slice(0, 3);
+        recentQRCodes.forEach(code => {
           const div = document.createElement('div');
           div.style.marginBottom = '30px';
           
