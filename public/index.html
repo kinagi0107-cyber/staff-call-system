@@ -422,7 +422,8 @@
 
     // タブ切り替え
     function switchTab(event, tab) {
-      if (tab === 'admin' && !isLoggedIn) {
+      // スタッフダッシュボード、対応済み一覧、管理者タブはすべてパスワード認証が必要
+      if ((tab === 'staff' || tab === 'completed' || tab === 'admin') && !isLoggedIn) {
         document.getElementById('passwordModal').classList.add('active');
         return;
       }
@@ -457,7 +458,8 @@
 
     function cancelLogin() {
       document.getElementById('passwordInput').value = '';
-      document.getElementById('passwordModal').classList.remove('active');
+      // モーダルを閉じずに、パスワード入力フィールドをクリアするだけ
+      // ユーザーが「キャンセル」をクリックしてもモーダルは表示されたまま
     }
 
     function logout() {
