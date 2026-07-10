@@ -776,22 +776,26 @@
       
       eventSource = new EventSource(API_URL + '/updates');
       
-      eventSource.onmessage = (event) => {
+          eventSource.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
           if (data.type === 'new-call') {
             // 新しい呼び出しがある場合
             loadCalls();
             playNotificationSound();
-                       showCallNotificationPopup(data.call.location_name || '場所未指定');
+            showCallNotificationPopup(data.call.location_name || '場所未指定');
             showNotification('🔔 新しい呼び出し', data.call.location_name || '場所未指定');
-
             updatePendingBadge();
           } else if (data.type === 'call_updated') {
             // 呼び出しが更新された場合
             loadCalls();
             loadCompletedCalls();
             updatePendingBadge();
+          } else if (data.type === 'staff_status_updated') {
+            // スタッフ状態が更新された場合
+            staffStatus.treasure = data.data.treasure;
+            staffStatus.vintage = data.data.vintage;
+            updateStaffStatusUI();
           }
         } catch (e) {
           console.error('Error parsing SSE message:', e);
@@ -1159,16 +1163,26 @@
       }
     }
 
-    function setTreasureStatus(status) {
+        function setTreasureStatus(status) {
       staffStatus.treasure = status;
-      saveStaffStatus();
       updateStaffStatusUI();
+      // サーバーに送信
+      fetch('/api/staff-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ treasure: status })
+      }).catch(e => console.error('Failed to update staff status:', e));
     }
 
     function setVintageStatus(status) {
       staffStatus.vintage = status;
-      saveStaffStatus();
       updateStaffStatusUI();
+      // サーバーに送信
+      fetch('/api/staff-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vintage: status })
+      }).catch(e => console.error('Failed to update staff status:', e));
     }
 
     function saveStaffStatus() {
