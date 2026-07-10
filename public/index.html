@@ -1081,14 +1081,34 @@
       }
     });   
     // 日本標準時刻（JST）にフォーマット
-         function formatDateToJST(dateString) {
-      // "2026-07-10 04:42:10" 形式の文字列をパース
-      const [datePart, timePart] = dateString.split(' ');
-      const [year, month, day] = datePart.split('-');
-      const [hour, minute, second] = timePart.split(':');
+    function formatDateToJST(dateInput) {
+      let date;
       
-      // UTC時刻として作成
-      const utcDate = new Date(Date.UTC(year, month - 1, day, hour, minute, second));
+      try {
+        // 文字列の場合
+        if (typeof dateInput === 'string') {
+          // "2026-07-10 04:42:10" 形式または ISO 形式の文字列をパース
+          if (dateInput.includes(' ')) {
+            // "2026-07-10 04:42:10" 形式
+            const [datePart, timePart] = dateInput.split(' ');
+            const [year, month, day] = datePart.split('-');
+            const [hour, minute, second] = timePart.split(':');
+            date = new Date(Date.UTC(year, month - 1, day, hour, minute, second));
+          } else {
+            // ISO 形式 "2026-07-10T04:42:10Z"
+            date = new Date(dateInput);
+          }
+        } else if (dateInput instanceof Date) {
+          // Date オブジェクトの場合
+          date = dateInput;
+        } else {
+          // その他の場合は Date に変換
+          date = new Date(dateInput);
+        }
+      } catch (e) {
+        console.error('Error parsing date:', dateInput, e);
+        return '日時エラー';
+      }
       
       // JST（UTC+9）にフォーマット
       const options = {
@@ -1101,7 +1121,7 @@
         timeZone: 'Asia/Tokyo'
       };
       const formatter = new Intl.DateTimeFormat('ja-JP', options);
-      return formatter.format(utcDate);
+      return formatter.format(date);
     }
   </script>
 </body>
