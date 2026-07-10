@@ -5,7 +5,56 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>スタッフコール - QR呼び出しシステム</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <style>
+     /* スタッフ対応状態ボタン */
+    .staff-status-section {
+      background: white;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .staff-status-section h3 {
+      margin-bottom: 15px;
+      font-size: 16px;
+      font-weight: 600;
+    }
+    .status-buttons {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    .status-button {
+      flex: 1;
+      padding: 12px 20px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.3s;
+      background: white;
+      color: #333;
+    }
+    .status-button.active {
+      border-color: transparent;
+      color: white;
+      font-weight: 600;
+    }
+    .status-button.available {
+      background: #3b82f6;
+      color: white;
+      border-color: #3b82f6;
+    }
+    .status-button.unavailable {
+      background: #ef4444;
+      color: white;
+      border-color: #ef4444;
+    }
+    .status-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+ <style>
     * {
       margin: 0;
       padding: 0;
@@ -444,7 +493,22 @@
 
     <!-- スタッフダッシュボード -->
     <div id="staff-tab" class="tab-content active">
-      <div class="card">
+          <div class="staff-status-section">
+        <h3>🏪 トレジャースタッフ</h3>
+        <div class="status-buttons">
+          <button class="status-button available active" id="treasureAvailable" onclick="setTreasureStatus('available')">✓ 対応可</button>
+          <button class="status-button unavailable" id="treasureUnavailable" onclick="setTreasureStatus('unavailable')">✗ 対応不可</button>
+        </div>
+      </div>
+
+      <div class="staff-status-section">
+        <h3>👕 古着スタッフ</h3>
+        <div class="status-buttons">
+          <button class="status-button available active" id="vintageAvailable" onclick="setVintageStatus('available')">✓ 対応可</button>
+          <button class="status-button unavailable" id="vintageUnavailable" onclick="setVintageStatus('unavailable')">✗ 対応不可</button>
+        </div>
+      </div>
+  <div class="card">
         <h2 style="margin-bottom: 20px;">呼び出し一覧（対応待ち）</h2>
         <div id="callList" class="call-list">
           <p style="text-align: center; color: #999; padding: 40px 20px;">呼び出しはまだありません</p>
@@ -1081,6 +1145,69 @@
         eventSource.close();
       }
     });   
+    // スタッフ対応状態管理
+    let staffStatus = {
+      treasure: 'available',
+      vintage: 'available'
+    };
+
+    // ローカルストレージから状態を読み込む
+    function loadStaffStatus() {
+      const saved = localStorage.getItem('staffStatus');
+      if (saved) {
+        staffStatus = JSON.parse(saved);
+        updateStaffStatusUI();
+      }
+    }
+
+    // トレジャースタッフの状態を設定
+    function setTreasureStatus(status) {
+      staffStatus.treasure = status;
+      saveStaffStatus();
+      updateStaffStatusUI();
+    }
+
+    // 古着スタッフの状態を設定
+    function setVintageStatus(status) {
+      staffStatus.vintage = status;
+      saveStaffStatus();
+      updateStaffStatusUI();
+    }
+
+    // 状態をローカルストレージに保存
+    function saveStaffStatus() {
+      localStorage.setItem('staffStatus', JSON.stringify(staffStatus));
+    }
+
+    // UIを更新
+    function updateStaffStatusUI() {
+      // トレジャースタッフ
+      const treasureAvailable = document.getElementById('treasureAvailable');
+      const treasureUnavailable = document.getElementById('treasureUnavailable');
+      if (staffStatus.treasure === 'available') {
+        treasureAvailable.classList.add('active');
+        treasureUnavailable.classList.remove('active');
+      } else {
+        treasureAvailable.classList.remove('active');
+        treasureUnavailable.classList.add('active');
+      }
+
+      // 古着スタッフ
+      const vintageAvailable = document.getElementById('vintageAvailable');
+      const vintageUnavailable = document.getElementById('vintageUnavailable');
+      if (staffStatus.vintage === 'available') {
+        vintageAvailable.classList.add('active');
+        vintageUnavailable.classList.remove('active');
+      } else {
+        vintageAvailable.classList.remove('active');
+        vintageUnavailable.classList.add('active');
+      }
+    }
+
+    // ページ読み込み時に状態を復元
+    window.addEventListener('load', function() {
+      loadStaffStatus();
+    });
   </script>
 </body>
 </html>
