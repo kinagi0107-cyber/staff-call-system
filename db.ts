@@ -188,7 +188,16 @@ export async function addStaffCall(id: string, qrCodeId: string, locationName: s
 export async function getStaffCalls() {
   return new Promise<any[]>((resolve, reject) => {
     db.all(
-      'SELECT * FROM staff_calls ORDER BY created_at DESC LIMIT 50',
+      `SELECT 
+        id, 
+        qr_code_id, 
+        location_name, 
+        status,
+        datetime(created_at, '+9 hours') as created_at,
+        datetime(resolved_at, '+9 hours') as resolved_at
+      FROM staff_calls 
+      ORDER BY created_at DESC 
+      LIMIT 50`,
       (err, rows) => {
         if (err) reject(err);
         else resolve(rows || []);
