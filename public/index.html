@@ -444,7 +444,7 @@
       gap: 10px;
       margin-bottom: 15px;
     }
-    .status-button {
+       .status-button {
       flex: 1;
       padding: 12px 20px;
       border: 2px solid #ddd;
@@ -453,20 +453,20 @@
       font-size: 14px;
       font-weight: 500;
       transition: all 0.3s;
-      background: white;
-      color: #333;
+      background: #e5e7eb;
+      color: #999;
     }
     .status-button.active {
       border-color: transparent;
       color: white;
       font-weight: 600;
     }
-    .status-button.available {
+    .status-button.active.available {
       background: #3b82f6;
       color: white;
       border-color: #3b82f6;
     }
-    .status-button.unavailable {
+    .status-button.active.unavailable {
       background: #ef4444;
       color: white;
       border-color: #ef4444;
@@ -1175,28 +1175,39 @@
       localStorage.setItem('staffStatus', JSON.stringify(staffStatus));
     }
 
-    function updateStaffStatusUI() {
+        function updateStaffStatusUI() {
       const treasureAvailable = document.getElementById('treasureAvailable');
       const treasureUnavailable = document.getElementById('treasureUnavailable');
+      
+      // トレジャースタッフ
       if (staffStatus.treasure === 'available') {
-        treasureAvailable.classList.add('active');
-        treasureUnavailable.classList.remove('active');
+        treasureAvailable.classList.add('active', 'available');
+        treasureAvailable.classList.remove('unavailable');
+        treasureUnavailable.classList.remove('active', 'unavailable');
+        treasureUnavailable.classList.add('unavailable');
       } else {
-        treasureAvailable.classList.remove('active');
-        treasureUnavailable.classList.add('active');
+        treasureAvailable.classList.remove('active', 'available');
+        treasureAvailable.classList.add('available');
+        treasureUnavailable.classList.add('active', 'unavailable');
+        treasureUnavailable.classList.remove('available');
       }
 
       const vintageAvailable = document.getElementById('vintageAvailable');
       const vintageUnavailable = document.getElementById('vintageUnavailable');
+      
+      // 古着スタッフ
       if (staffStatus.vintage === 'available') {
-        vintageAvailable.classList.add('active');
-        vintageUnavailable.classList.remove('active');
+        vintageAvailable.classList.add('active', 'available');
+        vintageAvailable.classList.remove('unavailable');
+        vintageUnavailable.classList.remove('active', 'unavailable');
+        vintageUnavailable.classList.add('unavailable');
       } else {
-        vintageAvailable.classList.remove('active');
-        vintageUnavailable.classList.add('active');
+        vintageAvailable.classList.remove('active', 'available');
+        vintageAvailable.classList.add('available');
+        vintageUnavailable.classList.add('active', 'unavailable');
+        vintageUnavailable.classList.remove('available');
       }
     }
-
     window.addEventListener('load', function() {
       loadStaffStatus();
     });
