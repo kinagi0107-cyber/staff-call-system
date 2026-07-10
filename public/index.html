@@ -326,6 +326,107 @@
       margin-left: 8px;
     }
   </style>
+      /* New Call Notification Popup */
+    .call-notification-popup {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.8);
+      justify-content: center;
+      align-items: center;
+      z-index: 2000;
+      animation: fadeIn 0.3s ease-in-out;
+    }
+    .call-notification-popup.active {
+      display: flex;
+    }
+    .call-notification-content {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 60px 40px;
+      border-radius: 20px;
+      text-align: center;
+      max-width: 600px;
+      width: 90%;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+      animation: slideUp 0.4s ease-out;
+    }
+    .call-notification-icon {
+      font-size: 80px;
+      margin-bottom: 20px;
+      animation: pulse 0.6s ease-in-out infinite;
+    }
+    .call-notification-title {
+      font-size: 32px;
+      font-weight: bold;
+      margin-bottom: 15px;
+      letter-spacing: 1px;
+    }
+    .call-notification-location {
+      font-size: 48px;
+      font-weight: bold;
+      margin: 30px 0;
+      word-wrap: break-word;
+      animation: bounce 0.6s ease-in-out infinite;
+    }
+    .call-notification-message {
+      font-size: 18px;
+      margin-bottom: 30px;
+      opacity: 0.95;
+    }
+    .call-notification-button {
+      padding: 15px 40px;
+      font-size: 16px;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      background: white;
+      color: #667eea;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+    .call-notification-button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    }
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+    @keyframes slideUp {
+      from {
+        transform: translateY(50px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+    @keyframes pulse {
+      0%, 100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.1);
+      }
+    }
+    @keyframes bounce {
+      0%, 100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-10px);
+      }
+    }
 </head>
 <body>
   <div class="container">
@@ -398,6 +499,16 @@
       <h2>✅ 呼び出し完了</h2>
       <p>しばらくお待ちください。</p>
       <div class="spinner"></div>
+    </div>
+  </div>
+  <!-- 新規呼び出し通知ポップアップ -->
+  <div id="callNotificationPopup" class="call-notification-popup">
+    <div class="call-notification-content">
+      <div class="call-notification-icon">🔔</div>
+      <div class="call-notification-title">新しい呼び出しです!</div>
+      <div class="call-notification-location" id="callNotificationLocation">テーブル1</div>
+      <div class="call-notification-message">お客様がお呼びです</div>
+      <button class="call-notification-button" onclick="closeCallNotification()">確認</button>
     </div>
   </div>
 
@@ -580,7 +691,20 @@
       }
     }
 
-    // リアルタイム更新用のEventSource
+       // 呼び出し通知ポップアップを表示
+    function showCallNotificationPopup(locationName) {
+      const popup = document.getElementById('callNotificationPopup');
+      const locationElement = document.getElementById('callNotificationLocation');
+      locationElement.textContent = locationName || '場所未指定';
+      popup.classList.add('active');
+    }
+
+    // 呼び出し通知ポップアップを閉じる
+    function closeCallNotification() {
+      const popup = document.getElementById('callNotificationPopup');
+      popup.classList.remove('active');
+    }
+ // リアルタイム更新用のEventSource
     function startRealtimeUpdates() {
       if (eventSource) {
         eventSource.close();
@@ -595,7 +719,9 @@
             // 新しい呼び出しがある場合
             loadCalls();
             playNotificationSound();
+                       showCallNotificationPopup(data.call.location_name || '場所未指定');
             showNotification('🔔 新しい呼び出し', data.call.location_name || '場所未指定');
+
             updatePendingBadge();
           } else if (data.type === 'call_updated') {
             // 呼び出しが更新された場合
