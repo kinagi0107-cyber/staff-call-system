@@ -1,9 +1,3 @@
-// スタッフ状態管理
-let staffStatus = {
-  treasure: 'available',
-  vintage: 'available'
-};
-
 // SSE接続を管理するセット
 const sseClients = new Set<any>();
 import express, { Request, Response } from 'express';
@@ -50,6 +44,11 @@ app.use(express.static('public'));
 
 // Store for active connections (for real-time updates)
 const activeConnections = new Set<Response>();
+// スタッフ状態管理
+let staffStatus = {
+  treasure: 'available',
+  vintage: 'available'
+};
 
 // Initialize database on startup
 await initializeDatabase();
@@ -231,6 +230,24 @@ app.get('/api/events', (req: Request, res: Response) => {
   req.on('close', () => {
     activeConnections.delete(res);
   });
+});
+
+// スタッフ状態を取得
+app.get('/api/staff-status', (req: Request, res: Response) => {
+  res.json(staffStatus);
+});
+
+// スタッフ状態を更新
+app.post('/api/staff-status', (req: Request, res: Response) => {
+  const { treasure, vintage } = req.body;
+  
+  if (treasure) staffStatus.treasure = treasure;
+  if (vintage) staffStatus.vintage = vintage;
+  
+  // すべてのSSEクライアントにブロードキャスト
+  broadcastToClients({ type: 'staff_status_updated', data: staffStatus });
+  
+  res.json(staffStatus);
 });
 
 function broadcastToClients(message: any) {
