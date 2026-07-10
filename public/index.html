@@ -793,7 +793,8 @@
           const time = document.createElement('div');
           time.className = 'call-item-time';
           const createdAt = new Date(call.created_at);
-          time.textContent = formatDateToJST(createdAt);
+          time.textContent = createdAt.toLocaleString('ja-JP');
+
           
           div.appendChild(content);
           
@@ -857,10 +858,10 @@
           
           content.appendChild(header);
           
-                   const time = document.createElement('div');
+          const time = document.createElement('div');
           time.className = 'call-item-time';
           const createdAt = new Date(call.created_at);
-          time.textContent = formatDateToJST(createdAt);
+          time.textContent = createdAt.toLocaleString('ja-JP');
           content.appendChild(time);
           
           div.appendChild(content);
@@ -1080,49 +1081,6 @@
         eventSource.close();
       }
     });   
-    // 日本標準時刻（JST）にフォーマット
-    function formatDateToJST(dateInput) {
-      let date;
-      
-      try {
-        // 文字列の場合
-        if (typeof dateInput === 'string') {
-          // "2026-07-10 04:42:10" 形式または ISO 形式の文字列をパース
-          if (dateInput.includes(' ')) {
-            // "2026-07-10 04:42:10" 形式
-            const [datePart, timePart] = dateInput.split(' ');
-            const [year, month, day] = datePart.split('-');
-            const [hour, minute, second] = timePart.split(':');
-            date = new Date(Date.UTC(year, month - 1, day, hour, minute, second));
-          } else {
-            // ISO 形式 "2026-07-10T04:42:10Z"
-            date = new Date(dateInput);
-          }
-        } else if (dateInput instanceof Date) {
-          // Date オブジェクトの場合
-          date = dateInput;
-        } else {
-          // その他の場合は Date に変換
-          date = new Date(dateInput);
-        }
-      } catch (e) {
-        console.error('Error parsing date:', dateInput, e);
-        return '日時エラー';
-      }
-      
-      // JST（UTC+9）にフォーマット
-      const options = {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        timeZone: 'Asia/Tokyo'
-      };
-      const formatter = new Intl.DateTimeFormat('ja-JP', options);
-      return formatter.format(date);
-    }
   </script>
 </body>
 </html>
