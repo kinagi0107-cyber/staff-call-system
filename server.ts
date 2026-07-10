@@ -1,3 +1,11 @@
+// スタッフ状態管理
+let staffStatus = {
+  treasure: 'available',
+  vintage: 'available'
+};
+
+// SSE接続を管理するセット
+const sseClients = new Set<any>();
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import { v4 as uuidv4 } from 'uuid';
