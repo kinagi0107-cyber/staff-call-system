@@ -1102,22 +1102,6 @@
       vintage: 'available'
     };
 
-    // ローカルストレージから状態を読み込む
-    function loadStaffStatus() {
-      const saved = localStorage.getItem('staffStatus');
-      if (saved) {
-        staffStatus = JSON.parse(saved);
-        updateStaffStatusUI();
-      }
-    }
-
-    // トレジャースタッフの状態を設定
-    // スタッフ対応状態管理
-    let staffStatus = {
-      treasure: 'available',
-      vintage: 'available'
-    };
-
     function loadStaffStatus() {
       const saved = localStorage.getItem('staffStatus');
       if (saved) {
@@ -1164,48 +1148,6 @@
       }
     }
 
-    window.addEventListener('load', function() {
-      loadStaffStatus();
-    });
-
-    // 古着スタッフの状態を設定
-    function setVintageStatus(status) {
-      staffStatus.vintage = status;
-      saveStaffStatus();
-      updateStaffStatusUI();
-    }
-
-    // 状態をローカルストレージに保存
-    function saveStaffStatus() {
-      localStorage.setItem('staffStatus', JSON.stringify(staffStatus));
-    }
-
-    // UIを更新
-    function updateStaffStatusUI() {
-      // トレジャースタッフ
-      const treasureAvailable = document.getElementById('treasureAvailable');
-      const treasureUnavailable = document.getElementById('treasureUnavailable');
-      if (staffStatus.treasure === 'available') {
-        treasureAvailable.classList.add('active');
-        treasureUnavailable.classList.remove('active');
-      } else {
-        treasureAvailable.classList.remove('active');
-        treasureUnavailable.classList.add('active');
-      }
-
-      // 古着スタッフ
-      const vintageAvailable = document.getElementById('vintageAvailable');
-      const vintageUnavailable = document.getElementById('vintageUnavailable');
-      if (staffStatus.vintage === 'available') {
-        vintageAvailable.classList.add('active');
-        vintageUnavailable.classList.remove('active');
-      } else {
-        vintageAvailable.classList.remove('active');
-        vintageUnavailable.classList.add('active');
-      }
-    }
-
-    // ページ読み込み時に状態を復元
     window.addEventListener('load', function() {
       loadStaffStatus();
     });
