@@ -3,6 +3,20 @@ import cors from 'cors';
 import { v4 as uuidv4 } from 'uuid';
 import path from 'path';
 import { fileURLToPath } from 'url';
+// 日本標準時刻（JST）にフォーマット
+function formatDateToJST(date: Date): string {
+  const options: Intl.DateTimeFormatOptions = {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    timeZone: 'Asia/Tokyo'
+  };
+  const formatter = new Intl.DateTimeFormat('ja-JP', options);
+  return formatter.format(date);
+}
 import {
   initializeDatabase,
   addQRCode,
@@ -109,7 +123,7 @@ app.post('/api/calls', async (req: Request, res: Response) => {
       qr_code_id: qrCodeId,
       location_name: finalLocation,
       status: 'pending',
-      created_at: new Date().toISOString(),
+            created_at: formatDateToJST(new Date()),
     };
 
     broadcastToClients({
