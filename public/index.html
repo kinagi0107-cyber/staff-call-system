@@ -1081,7 +1081,7 @@
       }
     });   
     // 日本標準時刻（JST）にフォーマット
-    function formatDateToJST(date) {
+        function formatDateToJST(date) {
       const options = {
         year: 'numeric',
         month: '2-digit',
@@ -1091,7 +1091,8 @@
         second: '2-digit',
         timeZone: 'Asia/Tokyo'
       };
-      return new Date(date.toLocaleString('ja-JP', options)).toLocaleString('ja-JP');
+      const formatter = new Intl.DateTimeFormat('ja-JP', options);
+      return formatter.format(date);
     }
   </script>
 </body>
