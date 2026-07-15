@@ -58,7 +58,7 @@ const spreadsheetId = process.env.GOOGLE_SHEETS_ID || '15UOQmvWzvToBQ64Szzj0I0Kj
 
 // Google認証（サービスアカウント）
 const auth = new google.auth.GoogleAuth({
-  keyFile: process.env.GOOGLE_CREDENTIALS_PATH || './credentials.json',
+  credentials: JSON.parse(process.env.GOOGLE_CREDENTIALS_JSON || '{}'),
   scopes: ['https://www.googleapis.com/auth/spreadsheets'],
 } );
 
