@@ -279,8 +279,20 @@ app.get('/api/staff-status', (req: Request, res: Response) => {
 // Broadcast to all connected clients
 function broadcastToClients(message: any) {
   const data = `data: ${JSON.stringify(message)}\n\n`;
+  const disconnectedClients: Response[] = [];
+
   activeConnections.forEach((res) => {
-    res.write(data);
+    try {
+      res.write(data);
+    } catch (error) {
+      console.error('Error broadcasting to client:', error);
+      disconnectedClients.push(res);
+    }
+  });
+
+  // 切断されたクライアントを削除
+  disconnectedClients.forEach((res) => {
+    activeConnections.delete(res);
   });
 }
 
