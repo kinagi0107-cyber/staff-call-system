@@ -310,21 +310,6 @@ app.post('/api/staff-status', (req: Request, res: Response) => {
   
   res.json(staffStatus);
 });
-
-// Google Sheetsにログを記録
-async function logCallToSheet(locationName: string) {
-  try {
-    const now = new Date();
-    const timestamp = formatDateToJST(now);
-    
-    await sheets.spreadsheets.values.append({
-      spreadsheetId: SPREADSHEET_ID,
-      range: `${SHEET_NAME}!A:B`,
-      valueInputOption: 'USER_ENTERED',
-      requestBody: {
-        values: [[timestamp, locationName]]
-      }
-    });
     
     console.log(`Logged to Google Sheets: ${timestamp} - ${locationName}`);
   } catch (error) {
