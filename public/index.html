@@ -1177,7 +1177,7 @@ async function setVintageStatus(status) {
 
 async function syncStaffStatusToServer() {
   try {
-    const response = await fetch('/api/staff-status', {
+    const response = await fetch(API_URL + '/api/staff-status', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
