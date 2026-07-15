@@ -1,11 +1,13 @@
-// SSE接続を管理するセット
-const sseClients = new Set<any>();
 import express, { Request, Response } from 'express';
 import { google } from 'googleapis';
 import cors from 'cors';
 import { v4 as uuidv4 } from 'uuid';
 import path from 'path';
 import { fileURLToPath } from 'url';
+
+// SSE接続を管理するセット
+const sseClients = new Set<any>();
+
 // 日本標準時刻（JST）にフォーマット
 function formatDateToJST(date: Date): string {
   const options: Intl.DateTimeFormatOptions = {
@@ -20,7 +22,15 @@ function formatDateToJST(date: Date): string {
   const formatter = new Intl.DateTimeFormat('ja-JP', options);
   return formatter.format(date);
 }
-import {
+// Google Sheets認証設定
+const sheetsAPI = google.sheets('v4');
+const spreadsheetId = process.env.GOOGLE_SHEETS_ID || '15UOQmvWzvToBQ64Szzj0I0Kj2gkcFAVwM3u1aa4_tEw';
+
+// Google認証（サービスアカウント）
+const auth = new google.auth.GoogleAuth({
+  keyFile: process.env.GOOGLE_CREDENTIALS_PATH || './credentials.json',
+  scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+} );import {
   initializeDatabase,
   addQRCode,
   getQRCode,
@@ -327,6 +337,35 @@ function broadcastToClients(message: any) {
     res.write(data);
   });
 }
+// Google Sheetsにログを記録
+async function logCallToSheet(location: string) {
+  try {
+    const authClient = await auth.getClient();
+    
+    const timestamp = formatDateToJST(new Date());
+    
+    // シートに追加するデータ
+    const values = [
+      [timestamp, location]
+    ];
+
+    await sheetsAPI.spreadsheets.values.append({
+      auth: authClient,
+      spreadsheetId: spreadsheetId,
+      range: 'Sheet1!A:B',
+      valueInputOption: 'USER_ENTERED',
+      requestBody: {
+        values: values,
+      },
+    });
+
+    console.log(`Call logged to Google Sheets: ${location} at ${timestamp}`);
+  } catch (error) {
+    console.error('Error logging call to Google Sheets:', error);
+  }
+}
+
+//
 
 // Health check
 app.get('/health', (req: Request, res: Response) => {
