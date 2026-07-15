@@ -241,17 +241,21 @@ app.delete('/api/calls', async (req: Request, res: Response) => {
 
 // SSE endpoint for real-time updates
 app.get('/api/updates', (req: Request, res: Response) => {
+  console.log('Client connected to SSE');
+  
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
   res.setHeader('Access-Control-Allow-Origin', '*');
 
   activeConnections.add(res);
+  console.log(`Total SSE connections: ${activeConnections.size}`);
 
   res.write('data: {"type":"connected"}\n\n');
 
   req.on('close', () => {
     activeConnections.delete(res);
+    console.log(`Client disconnected. Total connections: ${activeConnections.size}`);
   });
 });
 
@@ -278,6 +282,8 @@ app.get('/api/staff-status', (req: Request, res: Response) => {
 
 // Broadcast to all connected clients
 function broadcastToClients(message: any) {
+  console.log(`Broadcasting to ${activeConnections.size} clients:`, message);
+  
   const data = `data: ${JSON.stringify(message)}\n\n`;
   const disconnectedClients: Response[] = [];
 
@@ -290,7 +296,6 @@ function broadcastToClients(message: any) {
     }
   });
 
-  // 切断されたクライアントを削除
   disconnectedClients.forEach((res) => {
     activeConnections.delete(res);
   });
