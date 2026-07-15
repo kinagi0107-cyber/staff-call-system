@@ -299,7 +299,7 @@ async function logCallToSheet(location: string) {
     await sheetsAPI.spreadsheets.values.append({
       auth: authClient,
       spreadsheetId: spreadsheetId,
-      range: 'Sheet1!A:B',
+      range: 'ログ!A:B',
       valueInputOption: 'USER_ENTERED',
       requestBody: {
         values: values,
