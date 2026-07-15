@@ -5,8 +5,37 @@ import { v4 as uuidv4 } from 'uuid';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-// SSE接続を管理するセット
-const sseClients = new Set<any>();
+import {
+  initializeDatabase,
+  addQRCode,
+  getQRCode,
+  getAllQRCodes,
+  addStaffCall,
+  getStaffCalls,
+  updateCallStatus,
+  deleteAllCalls,
+  closeDatabase,
+} from './db.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+app.use(express.static('public'));
+
+// Store for active connections (for real-time updates)
+const activeConnections = new Set<Response>();
+
+// スタッフ状態管理
+let staffStatus = {
+  treasure: 'available',
+  vintage: 'available'
+};
 
 // 日本標準時刻（JST）にフォーマット
 function formatDateToJST(date: Date): string {
@@ -22,6 +51,7 @@ function formatDateToJST(date: Date): string {
   const formatter = new Intl.DateTimeFormat('ja-JP', options);
   return formatter.format(date);
 }
+
 // Google Sheets認証設定
 const sheetsAPI = google.sheets('v4');
 const spreadsheetId = process.env.GOOGLE_SHEETS_ID || '15UOQmvWzvToBQ64Szzj0I0Kj2gkcFAVwM3u1aa4_tEw';
@@ -30,63 +60,7 @@ const spreadsheetId = process.env.GOOGLE_SHEETS_ID || '15UOQmvWzvToBQ64Szzj0I0Kj
 const auth = new google.auth.GoogleAuth({
   keyFile: process.env.GOOGLE_CREDENTIALS_PATH || './credentials.json',
   scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-} );import {
-  initializeDatabase,
-  addQRCode,
-  getQRCode,
-  getAllQRCodes,
-  addStaffCall,
-  getStaffCalls,
-  updateCallStatus,
-  deleteAllCalls,
-  closeDatabase,
-} from './db.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Google Sheets認証情報
-const SPREADSHEET_ID = '15UOQmvWzvToBQ64Szzj0I0Kj2gkcFAVwM3u1aa4_tEw';
-const SHEET_NAME = 'ログ';
-
-// サービスアカウント認証情報（JSONキーの内容）
-const serviceAccountKey = {
-  type: 'service_account',
-  project_id: 'sharp-doodad-502408-b1',
-  private_key_id: '4653a315e7e6eed7e291ab4c6b675be4f19ad295',
-  private_key: '-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDdYAyeDN/PnXK+\nUx+RlnDTsZahm1yq6Xh1WKKmkDMmKHmsflg0nRxSGkoSRSW/6lL/E7Cb0ZkeK7za\nzUBrhSy1cE1KOxVvJoMW2rjp9m+1IwB5hPQHht8SjcUqFoXJMJSWwyYYVKTswGCe\nuibrfoMwZqmtiBErfPDuXWDpBYIsUMYXiIpvJ5voeGyXluTPpyYXUupGFuvFX/y+\nu5S0/jApIJLotSNWmr544AZu6ydbgnmUqguOM/6oa4gRFx9cJAwk8sYJAVHQIwFc\nTIZHTiDzV1tQQ2IDTmAK4FSourVIN+MuqpKBHfM7LFVYfpfGce1f4rs+LQvRJRVI\noNmk5MttAgMBAAECggEAPn+8ADElTOGoP/iKzJkbEIEuREDvGCejBQo5nWnPrwG1\nXFAtSeljUgCvEdpoznZy6SXfchZqMrzpbCKPgeuO1Ei44XCt2/wU/XJRy2fyYMLZ\ngvVYyfk3aG8TD49dRRBMmwXMbwkSqO6lOJrYmxrUIemSFPZ51nvHL5y4XAFcn3LF\n9nRIv1wXfbr/FeOnBqf6qqT7AoyuDF7qE++n/huxRjJvwzQgKgYTWZ/MHXgw8tHh\nzT/YFh/Psl8qReaAPuEguj2hzg8urz+80rZEe0BxWnA3UASeXY9IFZ+nbGltAgwT\nVgbf4ZD9wd485Sp03/L721jlgNanG09UncVRrWpf1wKBgQD4myucxi3tc6Imt2ft\nlGFKGHIFyLYEj+Z8M/Mf+mV3NPLYV+Qlx54yCKAY6fip61TcJv80gHLRU1EeEzF8\nWxHi60pkfPX5KyJK8Mvt41vNrs5Us50S2tYKHhYrjnUSdMj6J6Pt+jwbx8yqTf4q\nTEXQvCHQgdpKUFehPRNKTRm/MwKBgQDj9YyAI7PcPfh8JFfTFK8uYxjnwvT8+N+j\n0261v1Nu/sRjoeJ0CnEJDKK4YOvJoDSGOwaTJbE2fUOUuSf4pMCP2vdgeqHGQs2W\nchnP5mn03dY6IHyTGqOT9beulY87DLL8HqJVS8ibc/RzFvaH6YMmU8Hmv2SHaAtA\nr0LTXwPK3wKBgC8gAuFh87zKKZebNpkjglmwTpToGhC9UlyC4HhUV72EDPCToIzE\nzSkA15BBccCL+ncM8V17Z8hkOcEwtDW1cauJHH317g6Abay0/oMmkPVpSHVn4sN7\nNg2O7HbvNyP7fUlmED4BLDm74wD5bc+Iy8cokmRa6Q0jM6k90ZVJDjNfAoGBAJGu\nzHLb3kdDh3j21PW+A1KW3ETJMD43Yt1U8yzNsCmAQcwWmh1kyuZon9lLf4SkkMy0\nDjid3woetcDnL6dUywdkfbG3zYliCfc6xko6S77EwvL07ggo/x9A6nl1dUrci8pa\nXY47V2IZkcC3jShA0KL+5i1sZXevw3k8SG3DDC5rAoGAGoiwln6TD5h04WlSV7I/\nry0+vRJ6RBk99pD4Iqg8z7pW2pLM3DMUqG2lnTptM0U2EjYGYrv0/YxBseJMXl4b\nFfU/k/Yhh4h8S54dKQZTqTgmrXuKHOVrIGob+ojmvkLIi9g58JrSJrBKiFP8pnMW\nIjenRuPK7+uFKIjpFG7UP4o=\n-----END PRIVATE KEY-----\n',
-  client_email: 'staff-call-system@sharp-doodad-502408-b1.iam.gserviceaccount.com',
-  client_id: '111454910399201950100',
-  auth_uri: 'https://accounts.google.com/o/oauth2/auth',
-  token_uri: 'https://oauth2.googleapis.com/token',
-  auth_provider_x509_cert_url: 'https://www.googleapis.com/oauth2/v1/certs',
-  client_x509_cert_url: 'https://www.googleapis.com/robot/v1/metadata/x509/staff-call-system%40sharp-doodad-502408-b1.iam.gserviceaccount.com',
-  universe_domain: 'googleapis.com'
-};
-
-// Google Sheets APIクライアント
-const sheets = google.sheets({
-  version: 'v4',
-  auth: new google.auth.GoogleAuth({
-    credentials: serviceAccountKey,
-    scopes: ['https://www.googleapis.com/auth/spreadsheets']
-  } )
-});
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-// Middleware
-app.use(cors());
-app.use(express.json());
-app.use(express.static('public'));
-
-// Store for active connections (for real-time updates)
-const activeConnections = new Set<Response>();
-// スタッフ状態管理
-let staffStatus = {
-  treasure: 'available',
-  vintage: 'available'
-};
+} );
 
 // Initialize database on startup
 await initializeDatabase();
@@ -168,7 +142,7 @@ app.post('/api/calls', async (req: Request, res: Response) => {
       qr_code_id: qrCodeId,
       location_name: finalLocation,
       status: 'pending',
-            created_at: formatDateToJST(new Date()),
+      created_at: formatDateToJST(new Date()),
     };
 
     broadcastToClients({
@@ -185,6 +159,8 @@ app.post('/api/calls', async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Failed to create call' });
   }
 });
+
+// Update staff status
 app.post('/api/staff-status', async (req: Request, res: Response) => {
   try {
     const { treasure, vintage } = req.body;
@@ -193,6 +169,9 @@ app.post('/api/staff-status', async (req: Request, res: Response) => {
       res.status(400).json({ error: 'treasure and vintage status are required' });
       return;
     }
+
+    staffStatus.treasure = treasure;
+    staffStatus.vintage = vintage;
 
     broadcastToClients({
       type: 'staff-status-updated',
@@ -260,7 +239,6 @@ app.delete('/api/calls', async (req: Request, res: Response) => {
   }
 });
 
-// Server-Sent Events for real-time updates
 // SSE endpoint for real-time updates
 app.get('/api/updates', (req: Request, res: Response) => {
   res.setHeader('Content-Type', 'text/event-stream');
@@ -293,19 +271,20 @@ app.get('/api/events', (req: Request, res: Response) => {
   });
 });
 
-// スタッフ状態を取得
+// Get staff status
 app.get('/api/staff-status', (req: Request, res: Response) => {
   res.json(staffStatus);
 });
 
-// スタッフ状態を更新    
+// Broadcast to all connected clients
 function broadcastToClients(message: any) {
   const data = `data: ${JSON.stringify(message)}\n\n`;
   activeConnections.forEach((res) => {
     res.write(data);
   });
 }
-// Google Sheetsにログを記録
+
+// Log call to Google Sheets
 async function logCallToSheet(location: string) {
   try {
     const authClient = await auth.getClient();
@@ -333,8 +312,6 @@ async function logCallToSheet(location: string) {
   }
 }
 
-//
-
 // Health check
 app.get('/health', (req: Request, res: Response) => {
   res.json({ status: 'ok' });
@@ -343,7 +320,7 @@ app.get('/health', (req: Request, res: Response) => {
 // Start server
 const server = app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-  console.log(`Visit http://localhost:${PORT} to use the app`);
+  console.log(`Visit http://localhost:${PORT} to use the app` );
 });
 
 // Graceful shutdown
