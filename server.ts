@@ -298,24 +298,7 @@ app.get('/api/staff-status', (req: Request, res: Response) => {
   res.json(staffStatus);
 });
 
-// スタッフ状態を更新
-app.post('/api/staff-status', (req: Request, res: Response) => {
-  const { treasure, vintage } = req.body;
-  
-  if (treasure) staffStatus.treasure = treasure;
-  if (vintage) staffStatus.vintage = vintage;
-  
-  // すべてのSSEクライアントにブロードキャスト
-  broadcastToClients({ type: 'staff_status_updated', data: staffStatus });
-  
-  res.json(staffStatus);
-});
-    
-    console.log(`Logged to Google Sheets: ${timestamp} - ${locationName}`);
-  } catch (error) {
-    console.error('Error logging to Google Sheets:', error);
-  }
-}
+// スタッフ状態を更新    
 function broadcastToClients(message: any) {
   const data = `data: ${JSON.stringify(message)}\n\n`;
   activeConnections.forEach((res) => {
