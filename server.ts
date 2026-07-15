@@ -175,6 +175,26 @@ app.post('/api/calls', async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Failed to create call' });
   }
 });
+app.post('/api/staff-status', async (req: Request, res: Response) => {
+  try {
+    const { treasure, vintage } = req.body;
+
+    if (treasure === undefined || vintage === undefined) {
+      res.status(400).json({ error: 'treasure and vintage status are required' });
+      return;
+    }
+
+    broadcastToClients({
+      type: 'staff-status-updated',
+      data: { treasure, vintage },
+    });
+
+    res.json({ treasure, vintage });
+  } catch (error) {
+    console.error('Error updating staff status:', error);
+    res.status(500).json({ error: 'Failed to update staff status' });
+  }
+});
 
 // Get all staff calls
 app.get('/api/calls', async (req: Request, res: Response) => {
