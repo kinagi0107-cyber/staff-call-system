@@ -1163,31 +1163,39 @@
       }
     }
 
-        function setTreasureStatus(status) {
-      staffStatus.treasure = status;
-      updateStaffStatusUI();
-      // サーバーに送信
-      fetch('/api/staff-status', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ treasure: status })
-      }).catch(e => console.error('Failed to update staff status:', e));
-    }
+async function setTreasureStatus(status) {
+  staffStatus.treasure = status;
+  await syncStaffStatusToServer();
+  updateStaffStatusUI();
+}
 
-    function setVintageStatus(status) {
-      staffStatus.vintage = status;
-      updateStaffStatusUI();
-      // サーバーに送信
-      fetch('/api/staff-status', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ vintage: status })
-      }).catch(e => console.error('Failed to update staff status:', e));
-    }
+async function setVintageStatus(status) {
+  staffStatus.vintage = status;
+  await syncStaffStatusToServer();
+  updateStaffStatusUI();
+}
 
-    function saveStaffStatus() {
-      localStorage.setItem('staffStatus', JSON.stringify(staffStatus));
+async function syncStaffStatusToServer() {
+  try {
+    const response = await fetch('/api/staff-status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        treasure: staffStatus.treasure,
+        vintage: staffStatus.vintage
+      })
+    });
+    if (!response.ok) {
+      console.error('Failed to sync staff status to server');
     }
+  } catch (error) {
+    console.error('Error syncing staff status:', error);
+  }
+}
+
+function saveStaffStatus() {
+  localStorage.setItem('staffStatus', JSON.stringify(staffStatus));
+}
 
         function updateStaffStatusUI() {
       const treasureAvailable = document.getElementById('treasureAvailable');
