@@ -1157,6 +1157,7 @@ function startRealtimeUpdates() {
       }
       
       startRealtimeUpdates();
+      loadStaffStatus();
       handleCallFromURL();
       updatePendingBadge();
     });
@@ -1173,13 +1174,24 @@ function startRealtimeUpdates() {
       vintage: 'available'
     };
 
-    function loadStaffStatus() {
-      const saved = localStorage.getItem('staffStatus');
-      if (saved) {
-        staffStatus = JSON.parse(saved);
-        updateStaffStatusUI();
-      }
+async function loadStaffStatus() {
+  try {
+    const response = await fetch(API_URL + '/staff-status');
+    if (response.ok) {
+      const data = await response.json();
+      staffStatus.treasure = data.treasure;
+      staffStatus.vintage = data.vintage;
+      updateStaffStatusUI();
     }
+  } catch (error) {
+    // サーバーから取得できない場合はローカルストレージを使用
+    const saved = localStorage.getItem('staffStatus');
+    if (saved) {
+      staffStatus = JSON.parse(saved);
+      updateStaffStatusUI();
+    }
+  }
+}
 
 async function setTreasureStatus(status) {
   staffStatus.treasure = status;
