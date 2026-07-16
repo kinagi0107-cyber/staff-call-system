@@ -1160,23 +1160,7 @@ function startRealtimeUpdates() {
       handleCallFromURL();
       updatePendingBadge();
     });
-
-      
-      // ブラウザ通知の許可をリクエスト
-      if ('Notification' in window && Notification.permission === 'default') {
-        Notification.requestPermission();
-      }
-      
-      // リアルタイム更新を開始
-      startRealtimeUpdates();
-      
-      // URL パラメータから呼び出しを処理
-      handleCallFromURL();
-      
-      // 対応待ちバッジを更新
-      updatePendingBadge();
-    });
-
+    
     // ページを離れるときはSSEを閉じる
     window.addEventListener('beforeunload', () => {
       if (eventSource) {
