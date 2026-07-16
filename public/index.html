@@ -772,13 +772,22 @@
       popup.classList.remove('active');
     }
  // リアルタイム更新用のEventSource
-    function updateDebugInfo(message) {
-  const debugDiv = document.getElementById('debugInfo');
-  const timestamp = new Date().toLocaleTimeString('ja-JP');
-  debugDiv.innerHTML += `[${timestamp}] ${message}  
+ function updateDebugInfo(message) {
+  try {
+    const debugDiv = document.getElementById('debugInfo');
+    if (!debugDiv) {
+      console.error('debugInfo element not found');
+      return;
+    }
+    const timestamp = new Date().toLocaleTimeString('ja-JP');
+    debugDiv.innerHTML += `[${timestamp}] ${message}  
 `;
-  debugDiv.scrollTop = debugDiv.scrollHeight;
+    debugDiv.scrollTop = debugDiv.scrollHeight;
+  } catch (e) {
+    console.error('Error in updateDebugInfo:', e);
+  }
 }
+
 function startRealtimeUpdates() {
       if (eventSource) {
         eventSource.close();
