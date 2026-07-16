@@ -1143,9 +1143,25 @@ function startRealtimeUpdates() {
     }
 
     // 初期化
-    window.addEventListener('load', () => {
-      console.log('Page loaded');
-      loadCalls();
+    function initializeApp() {
+  console.log('Page loaded');
+  loadCalls();
+  
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+  
+  startRealtimeUpdates();
+  handleCallFromURL();
+  updatePendingBadge();
+}
+
+// ページ読み込み時に実行
+if (document.readyState === 'loading') {
+  window.addEventListener('load', initializeApp);
+} else {
+  initializeApp();
+}
       
       // ブラウザ通知の許可をリクエスト
       if ('Notification' in window && Notification.permission === 'default') {
