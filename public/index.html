@@ -789,11 +789,16 @@
 }
 
 function startRealtimeUpdates() {
-      if (eventSource) {
-        eventSource.close();
-      }
-      
-      eventSource = new EventSource(API_URL + '/updates');
+  if (eventSource) {
+    eventSource.close();
+  }
+  
+  const debugDiv = document.getElementById('debugInfo');
+  if (debugDiv) {
+    debugDiv.innerHTML = '';
+  }
+  updateDebugInfo('SSE接続中...');
+  eventSource = new EventSource(API_URL + '/updates');
       
           eventSource.onmessage = (event) => {
         try {
@@ -1143,7 +1148,7 @@ function startRealtimeUpdates() {
     }
 
     // 初期化
-    function initializeApp() {
+   window.addEventListener('load', () => {
   console.log('Page loaded');
   loadCalls();
   
@@ -1154,14 +1159,7 @@ function startRealtimeUpdates() {
   startRealtimeUpdates();
   handleCallFromURL();
   updatePendingBadge();
-}
-
-// ページ読み込み時に実行
-if (document.readyState === 'loading') {
-  window.addEventListener('load', initializeApp);
-} else {
-  initializeApp();
-}
+});
       
       // ブラウザ通知の許可をリクエスト
       if ('Notification' in window && Notification.permission === 'default') {
