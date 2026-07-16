@@ -587,7 +587,10 @@
       </div>
     </div>
   </div>
-
+<!-- デバッグ情報表示 -->
+<div id="debugInfo" style="position: fixed; bottom: 10px; right: 10px; ...">
+  SSE接続: 初期化中...
+</div>
   <script>
     const API_URL = '/api';
     let isLoggedIn = false;
@@ -769,7 +772,14 @@
       popup.classList.remove('active');
     }
  // リアルタイム更新用のEventSource
-    function startRealtimeUpdates() {
+    function updateDebugInfo(message) {
+  const debugDiv = document.getElementById('debugInfo');
+  const timestamp = new Date().toLocaleTimeString('ja-JP');
+  debugDiv.innerHTML += `[${timestamp}] ${message}  
+`;
+  debugDiv.scrollTop = debugDiv.scrollHeight;
+}
+function startRealtimeUpdates() {
       if (eventSource) {
         eventSource.close();
       }
