@@ -1148,18 +1148,19 @@ function startRealtimeUpdates() {
     }
 
     // 初期化
-   window.addEventListener('load', () => {
-  console.log('Page loaded');
-  loadCalls();
-  
-  if ('Notification' in window && Notification.permission === 'default') {
-    Notification.requestPermission();
-  }
-  
-  startRealtimeUpdates();
-  handleCallFromURL();
-  updatePendingBadge();
-});
+     window.addEventListener('load', () => {
+      console.log('Page loaded');
+      loadCalls();
+      
+      if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+      }
+      
+      startRealtimeUpdates();
+      handleCallFromURL();
+      updatePendingBadge();
+    });
+
       
       // ブラウザ通知の許可をリクエスト
       if ('Notification' in window && Notification.permission === 'default') {
