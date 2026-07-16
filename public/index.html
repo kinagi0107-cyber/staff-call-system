@@ -815,7 +815,7 @@ function startRealtimeUpdates() {
             loadCalls();
             loadCompletedCalls();
             updatePendingBadge();
-          } else if (data.type === 'staff_status-updated') {
+            } else if (data.type === 'staff-status-updated') {
             // スタッフ状態が更新された場合
             staffStatus.treasure = data.data.treasure;
             staffStatus.vintage = data.data.vintage;
