@@ -1002,39 +1002,50 @@ function playNotificationSound() {
   try {
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
-    // 1回のビープを鳴らす関数
-    function playBeep(startTime) {
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-      oscillator.frequency.value = 880;
-      oscillator.type = 'sine';
-      gainNode.gain.setValueAtTime(0.8, startTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + 0.15);
-      oscillator.start(startTime);
-      oscillator.stop(startTime + 0.15);
+    // ブラウザの自動再生制限を解除
+    const startAudio = () => {
+      if (audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
+
+      function playBeep(startTime) {
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        oscillator.frequency.value = 1000;
+        oscillator.type = 'square';
+        gainNode.gain.setValueAtTime(1.0, startTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + 0.2);
+        oscillator.start(startTime);
+        oscillator.stop(startTime + 0.2);
+      }
+
+      const t = audioContext.currentTime;
+      const beepInterval = 0.28;
+      const setInterval2 = 1.0;
+
+      // 1セット目
+      playBeep(t);
+      playBeep(t + beepInterval);
+      playBeep(t + beepInterval * 2);
+
+      // 2セット目
+      playBeep(t + setInterval2);
+      playBeep(t + setInterval2 + beepInterval);
+      playBeep(t + setInterval2 + beepInterval * 2);
+    };
+
+    if (audioContext.state === 'suspended') {
+      audioContext.resume().then(startAudio);
+    } else {
+      startAudio();
     }
-
-    const t = audioContext.currentTime;
-    const beepInterval = 0.22;   // ビープ間隔（秒）
-    const setInterval2 = 0.9;    // セット間の間隔（秒）
-
-    // 1セット目: ピッ・ピッ・ピッ
-    playBeep(t);
-    playBeep(t + beepInterval);
-    playBeep(t + beepInterval * 2);
-
-    // 2セット目: ピッ・ピッ・ピッ
-    playBeep(t + setInterval2);
-    playBeep(t + setInterval2 + beepInterval);
-    playBeep(t + setInterval2 + beepInterval * 2);
 
   } catch (e) {
     console.error('Error playing notification sound:', e);
   }
 }
-
 
     // クリップボードにコピー
     function copyToClipboard(text) {
