@@ -1000,14 +1000,13 @@ function startRealtimeUpdates() {
 
 function playNotificationSound() {
   try {
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    // 既存の AudioContext を再利用（iPad Safari 対策）
+    if (!sharedAudioContext) {
+      sharedAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    const audioContext = sharedAudioContext;
 
-    // ブラウザの自動再生制限を解除
     const startAudio = () => {
-      if (audioContext.state === 'suspended') {
-        audioContext.resume();
-      }
-
       function playBeep(startTime) {
         const oscillator = audioContext.createOscillator();
         const gainNode = audioContext.createGain();
@@ -1025,12 +1024,9 @@ function playNotificationSound() {
       const beepInterval = 0.28;
       const setInterval2 = 1.0;
 
-      // 1セット目
       playBeep(t);
       playBeep(t + beepInterval);
       playBeep(t + beepInterval * 2);
-
-      // 2セット目
       playBeep(t + setInterval2);
       playBeep(t + setInterval2 + beepInterval);
       playBeep(t + setInterval2 + beepInterval * 2);
@@ -1159,7 +1155,20 @@ function playNotificationSound() {
       
       startRealtimeUpdates();
       loadStaffStatus();
-      handleCallFromURL();
+            // iPad Safari 対策: 最初のユーザー操作で AudioContext を初期化
+      document.addEventListener('touchstart', function initAudio() {
+        if (!sharedAudioContext) {
+          sharedAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+          sharedAudioContext.resume();
+        }
+      }, { once: true });
+      document.addEventListener('click', function initAudioClick() {
+        if (!sharedAudioContext) {
+          sharedAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+          sharedAudioContext.resume();
+        }
+      }, { once: true });
+handleCallFromURL();
       updatePendingBadge();
     });
     
@@ -1169,12 +1178,13 @@ function playNotificationSound() {
         eventSource.close();
       }
     });   
+    // AudioContext をグローバルで保持（iPad Safari 対策）
+let sharedAudioContext = null;
     // スタッフ対応状態管理
     let staffStatus = {
-      treasure: 'available',
+  treasure: 'available',
       vintage: 'available'
     };
-
 async function loadStaffStatus() {
   try {
     const response = await fetch(API_URL + '/staff-status');
