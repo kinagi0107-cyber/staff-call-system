@@ -556,6 +556,27 @@
       <div class="spinner"></div>
     </div>
   </div>
+  
+    <!-- 重複呼び出しエラー画面 -->
+  <div id="duplicateScreen" class="overlay-screen">
+    <div class="overlay-content">
+      <h2>⚠️ 呼び出し済みです</h2>
+      <p>まもなくスタッフが参ります。  
+しばらくお待ちください。</p>
+    </div>
+  </div>
+
+  <!-- 呼び出し確認画面 -->
+  <div id="confirmScreen" class="overlay-screen">
+    <div class="overlay-content">
+      <h2>🔔 スタッフを呼びますか？</h2>
+      <p id="confirmLocationText" style="font-size: 18px; font-weight: bold; margin: 15px 0; color: #667eea;"></p>
+      <div style="display: flex; gap: 15px; margin-top: 20px;">
+        <button onclick="confirmCall()" style="flex: 1; padding: 15px; background: #667eea; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer;">✅ 呼ぶ</button>
+        <button onclick="cancelCall()" style="flex: 1; padding: 15px; background: #f0f0f0; color: #333; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer;">❌ キャンセル</button>
+      </div>
+    </div>
+  </div>
 
   <!-- 完了画面 -->
   <div id="completionScreen" class="overlay-screen">
@@ -1080,16 +1101,15 @@ function playNotificationSound() {
       }
     }
 
-    // URL パラメータから呼び出しを処理
+    // 呼び出し確認用の一時データ
+    let pendingCallData = null;
+
     async function handleCallFromURL() {
       const params = new URLSearchParams(window.location.search);
       const callId = params.get('call');
       
       if (callId) {
         console.log('Handling call from URL:', callId);
-        
-        // 処理中画面を表示
-        document.getElementById('processingScreen').classList.add('active');
         
         try {
           // QRコード情報を取得
@@ -1098,49 +1118,72 @@ function playNotificationSound() {
             const qrCode = await qrResponse.json();
             console.log('QR code found:', qrCode);
             
-            // 呼び出しを作成
-            const callResponse = await fetch(API_URL + '/calls', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ 
-                qrCodeId: callId, 
-                location: qrCode.name || '場所未指定'
-              })
-            });
-            
-            if (callResponse.ok) {
-              console.log('Call created successfully');
-              playNotificationSound();
-              
-              // 処理中画面を非表示
-              document.getElementById('processingScreen').classList.remove('active');
-              
-              // 完了画面を表示
-              document.getElementById('completionScreen').classList.add('active');
-              
-              // 3秒後にページを閉じる
-              setTimeout(() => {
-                document.getElementById('completionScreen').classList.remove('active');
-                
-                // ブラウザの戻るボタンで戻る、またはウィンドウを閉じる
-                if (window.history.length > 1) {
-                  window.history.back();
-                } else {
-                  window.close();
-                }
-              }, 3000);
-            } else {
-              console.error('Failed to create call:', callResponse.status);
-              document.getElementById('processingScreen').classList.remove('active');
-            }
+            // 確認画面を表示
+            pendingCallData = { callId, location: qrCode.name || '場所未指定' };
+            document.getElementById('confirmLocationText').textContent = qrCode.name || '場所未指定';
+            document.getElementById('confirmScreen').classList.add('active');
           } else {
             console.error('QR code not found:', qrResponse.status);
-            document.getElementById('processingScreen').classList.remove('active');
           }
         } catch (error) {
           console.error('Error handling call from URL:', error);
-          document.getElementById('processingScreen').classList.remove('active');
         }
+      }
+    }
+
+    async function confirmCall() {
+      if (!pendingCallData) return;
+      
+      document.getElementById('confirmScreen').classList.remove('active');
+      document.getElementById('processingScreen').classList.add('active');
+      
+      try {
+        const callResponse = await fetch(API_URL + '/calls', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            qrCodeId: pendingCallData.callId, 
+            location: pendingCallData.location
+          })
+        });
+        
+        document.getElementById('processingScreen').classList.remove('active');
+        
+        if (callResponse.ok) {
+          console.log('Call created successfully');
+          playNotificationSound();
+          document.getElementById('completionScreen').classList.add('active');
+          
+          setTimeout(() => {
+            document.getElementById('completionScreen').classList.remove('active');
+            if (window.history.length > 1) {
+              window.history.back();
+            } else {
+              window.close();
+            }
+          }, 3000);
+        } else if (callResponse.status === 429) {
+          // 重複呼び出し
+          document.getElementById('duplicateScreen').classList.add('active');
+          setTimeout(() => {
+            document.getElementById('duplicateScreen').classList.remove('active');
+          }, 3000);
+        } else {
+          console.error('Failed to create call:', callResponse.status);
+        }
+      } catch (error) {
+        console.error('Error creating call:', error);
+        document.getElementById('processingScreen').classList.remove('active');
+      }
+      
+      pendingCallData = null;
+    }
+
+    function cancelCall() {
+      document.getElementById('confirmScreen').classList.remove('active');
+      pendingCallData = null;
+      if (window.history.length > 1) {
+        window.history.back();
       }
     }
 
