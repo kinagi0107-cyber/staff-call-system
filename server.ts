@@ -12,6 +12,7 @@ import {
   getAllQRCodes,
   addStaffCall,
   getStaffCalls,
+  getRecentCallByQRCode,
   updateCallStatus,
   deleteAllCalls,
   closeDatabase,
