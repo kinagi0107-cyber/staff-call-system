@@ -274,7 +274,7 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background: rgba(0, 0, 0, 0.7);
+      background: #ffffff;
       justify-content: center;
       align-items: center;
       z-index: 1001;
@@ -1164,9 +1164,13 @@ function playNotificationSound() {
           }, 3000);
         } else if (callResponse.status === 429) {
           // 重複呼び出し
-          document.getElementById('duplicateScreen').classList.add('active');
+                    document.getElementById('duplicateScreen').classList.add('active');
           setTimeout(() => {
-            document.getElementById('duplicateScreen').classList.remove('active');
+            if (window.history.length > 1) {
+              window.history.back();
+            } else {
+              window.close();
+            }
           }, 3000);
         } else {
           console.error('Failed to create call:', callResponse.status);
@@ -1180,16 +1184,22 @@ function playNotificationSound() {
     }
 
     function cancelCall() {
-      document.getElementById('confirmScreen').classList.remove('active');
       pendingCallData = null;
       if (window.history.length > 1) {
         window.history.back();
+      } else {
+        window.close();
       }
     }
 
     // 初期化
      window.addEventListener('load', () => {
-      console.log('Page loaded');
+   // QRスキャンからのアクセスの場合はログイン画面を非表示にする
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('call')) {
+        document.getElementById('passwordModal').classList.remove('active');
+      }
+       console.log('Page loaded');
       loadCalls();
       
       if ('Notification' in window && Notification.permission === 'default') {
