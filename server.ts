@@ -115,7 +115,6 @@ app.get('/api/qr-codes/:id', async (req: Request, res: Response) => {
   }
 });
 
-// Create staff call
 app.post('/api/calls', async (req: Request, res: Response) => {
   try {
     const { qrCodeId, location, locationName } = req.body;
@@ -133,10 +132,16 @@ app.post('/api/calls', async (req: Request, res: Response) => {
       return;
     }
 
+    // 30秒以内の重複呼び出しチェック
+    const recentCall = await getRecentCallByQRCode(qrCodeId, 30);
+    if (recentCall) {
+      res.status(429).json({ error: 'Duplicate call within 30 seconds' });
+      return;
+    }
+
     const callId = uuidv4();
     await addStaffCall(callId, qrCodeId, finalLocation);
 
-    // Broadcast to all connected clients
     const callData = {
       id: callId,
       qr_code_id: qrCodeId,
@@ -150,7 +155,6 @@ app.post('/api/calls', async (req: Request, res: Response) => {
       call: callData,
     });
 
-    // Google Sheetsにログを記録
     await logCallToSheet(finalLocation);
 
     res.json(callData);
