@@ -241,3 +241,20 @@ export function closeDatabase() {
 }
 
 export { db, HARDCODED_QR_CODES };
+
+export async function getRecentCallByQRCode(qrCodeId: string, seconds: number) {
+  return new Promise<any>((resolve, reject) => {
+    db.get(
+      `SELECT id FROM staff_calls 
+       WHERE qr_code_id = ? 
+       AND created_at >= datetime('now', '-' || ? || ' seconds')
+       ORDER BY created_at DESC 
+       LIMIT 1`,
+      [qrCodeId, seconds],
+      (err, row) => {
+        if (err) reject(err);
+        else resolve(row || null);
+      }
+    );
+  });
+}
