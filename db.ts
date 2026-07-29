@@ -114,6 +114,13 @@ export async function initializeDatabase() {
         });
       });
     });
+      db.run(`
+        CREATE TABLE IF NOT EXISTS staff_status (
+          id INTEGER PRIMARY KEY,
+          treasure TEXT DEFAULT 'available',
+          vintage TEXT DEFAULT 'available'
+        )
+      `);
 
     // Seed hardcoded QR codes
     await seedHardcodedQRCodes();
@@ -252,6 +259,32 @@ export async function getRecentCallByQRCode(qrCodeId: string, seconds: number) {
        LIMIT 1`,
       [qrCodeId, seconds],
       (err, row) => {
+        if (err) reject(err);
+        else resolve(row || null);
+      }
+    );
+  });
+}
+// スタッフステータスをDBに保存
+export async function saveStaffStatusToDB(treasure: string, vintage: string) {
+  return new Promise<void>((resolve, reject) => {
+    db.run(
+      `INSERT OR REPLACE INTO staff_status (id, treasure, vintage) VALUES (1, ?, ?)`,
+      [treasure, vintage],
+      (err) => {
+        if (err) reject(err);
+        else resolve();
+      }
+    );
+  });
+}
+
+// スタッフステータスをDBから読み込み
+export async function loadStaffStatusFromDB() {
+  return new Promise<{ treasure: string; vintage: string } | null>((resolve, reject) => {
+    db.get(
+      `SELECT treasure, vintage FROM staff_status WHERE id = 1`,
+      (err, row: any) => {
         if (err) reject(err);
         else resolve(row || null);
       }
