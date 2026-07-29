@@ -86,7 +86,7 @@ export async function seedHardcodedQRCodes() {
 export async function initializeDatabase() {
   try {
     // Create tables
-    await new Promise<void>((resolve, reject) => {
+        await new Promise<void>((resolve, reject) => {
       db.serialize(() => {
         // QR Codes table
         db.run(`
@@ -108,19 +108,21 @@ export async function initializeDatabase() {
             resolved_at DATETIME,
             FOREIGN KEY (qr_code_id) REFERENCES qr_codes(id)
           )
+        `);
+
+        // Staff status table
+        db.run(`
+          CREATE TABLE IF NOT EXISTS staff_status (
+            id INTEGER PRIMARY KEY,
+            treasure TEXT DEFAULT 'available',
+            vintage TEXT DEFAULT 'available'
+          )
         `, (err) => {
           if (err) reject(err);
           else resolve();
         });
       });
     });
-      db.run(`
-        CREATE TABLE IF NOT EXISTS staff_status (
-          id INTEGER PRIMARY KEY,
-          treasure TEXT DEFAULT 'available',
-          vintage TEXT DEFAULT 'available'
-        )
-      `);
 
     // Seed hardcoded QR codes
     await seedHardcodedQRCodes();
