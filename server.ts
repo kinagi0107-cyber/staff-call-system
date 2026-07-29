@@ -16,6 +16,8 @@ import {
   updateCallStatus,
   deleteAllCalls,
   closeDatabase,
+  saveStaffStatusToDB,
+  loadStaffStatusFromDB,
 } from './db.js';
 
 const __filename = fileURLToPath(import.meta.url);
