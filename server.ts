@@ -65,6 +65,13 @@ const auth = new google.auth.GoogleAuth({
 
 // Initialize database on startup
 await initializeDatabase();
+// DBからスタッフステータスを復元
+const savedStatus = await loadStaffStatusFromDB();
+if (savedStatus) {
+  staffStatus.treasure = savedStatus.treasure;
+  staffStatus.vintage = savedStatus.vintage;
+  console.log('Staff status restored from DB:', staffStatus);
+}
 
 // API Routes
 
@@ -177,7 +184,9 @@ app.post('/api/staff-status', async (req: Request, res: Response) => {
 
     staffStatus.treasure = treasure;
     staffStatus.vintage = vintage;
-
+ // DBに永続化
+    await saveStaffStatusToDB(treasure, vintage);
+    
     broadcastToClients({
       type: 'staff-status-updated',
       data: { treasure, vintage },
