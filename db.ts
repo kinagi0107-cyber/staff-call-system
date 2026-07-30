@@ -89,21 +89,23 @@ export async function initializeDatabase() {
         await new Promise<void>((resolve, reject) => {
       db.serialize(() => {
         // QR Codes table
-        db.run(`
+                db.run(`
           CREATE TABLE IF NOT EXISTS qr_codes (
             id TEXT PRIMARY KEY,
             name TEXT NOT NULL,
+            department TEXT DEFAULT 'none',
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
           )
         `);
 
         // Staff calls table
-        db.run(`
+                db.run(`
           CREATE TABLE IF NOT EXISTS staff_calls (
             id TEXT PRIMARY KEY,
             qr_code_id TEXT NOT NULL,
             location_name TEXT NOT NULL,
             status TEXT DEFAULT 'pending',
+            request TEXT DEFAULT '',
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             resolved_at DATETIME,
             FOREIGN KEY (qr_code_id) REFERENCES qr_codes(id)
@@ -135,11 +137,11 @@ export async function initializeDatabase() {
   }
 }
 
-export async function addQRCode(id: string, name: string) {
+export async function addQRCode(id: string, name: string, department: string = 'none') {
   return new Promise<void>((resolve, reject) => {
     db.run(
-      'INSERT INTO qr_codes (id, name) VALUES (?, ?)',
-      [id, name],
+      'INSERT INTO qr_codes (id, name, department) VALUES (?, ?, ?)',
+      [id, name, department],
       (err) => {
         if (err) reject(err);
         else resolve();
@@ -181,11 +183,11 @@ export async function getAllQRCodes() {
   });
 }
 
-export async function addStaffCall(id: string, qrCodeId: string, locationName: string) {
+export async function addStaffCall(id: string, qrCodeId: string, locationName: string, request: string = '') {
   return new Promise<void>((resolve, reject) => {
     db.run(
-      'INSERT INTO staff_calls (id, qr_code_id, location_name, status) VALUES (?, ?, ?, ?)',
-      [id, qrCodeId, locationName, 'pending'],
+      'INSERT INTO staff_calls (id, qr_code_id, location_name, status, request) VALUES (?, ?, ?, ?, ?)',
+      [id, qrCodeId, locationName, 'pending', request],
       (err) => {
         if (err) reject(err);
         else resolve();
@@ -197,11 +199,12 @@ export async function addStaffCall(id: string, qrCodeId: string, locationName: s
 export async function getStaffCalls() {
   return new Promise<any[]>((resolve, reject) => {
     db.all(
-      `SELECT 
+            `SELECT 
         id, 
         qr_code_id, 
         location_name, 
         status,
+        request,
         datetime(created_at, '+9 hours') as created_at,
         datetime(resolved_at, '+9 hours') as resolved_at
       FROM staff_calls 
