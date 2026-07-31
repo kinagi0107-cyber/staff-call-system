@@ -91,16 +91,16 @@ app.get('/api/qr-codes', async (req: Request, res: Response) => {
 // Create new QR code
 app.post('/api/qr-codes', async (req: Request, res: Response) => {
   try {
-    const { name } = req.body;
+    const { name, department } = req.body;
     if (!name) {
       res.status(400).json({ error: 'Name is required' });
       return;
     }
 
     const id = uuidv4();
-    await addQRCode(id, name);
+    await addQRCode(id, name, department || 'none');
 
-    res.json({ id, name });
+    res.json({ id, name, department: department || 'none' });
   } catch (error) {
     console.error('Error creating QR code:', error);
     res.status(500).json({ error: 'Failed to create QR code' });
@@ -127,8 +127,9 @@ app.get('/api/qr-codes/:id', async (req: Request, res: Response) => {
 
 app.post('/api/calls', async (req: Request, res: Response) => {
   try {
-    const { qrCodeId, location, locationName } = req.body;
+    const { qrCodeId, location, locationName, request } = req.body;
     const finalLocation = location || locationName;
+    const finalRequest = request || '';
 
     if (!qrCodeId || !finalLocation) {
       res.status(400).json({ error: 'qrCodeId and location are required' });
@@ -150,13 +151,14 @@ app.post('/api/calls', async (req: Request, res: Response) => {
     }
 
     const callId = uuidv4();
-    await addStaffCall(callId, qrCodeId, finalLocation);
+    await addStaffCall(callId, qrCodeId, finalLocation, finalRequest);
 
     const callData = {
       id: callId,
       qr_code_id: qrCodeId,
       location_name: finalLocation,
       status: 'pending',
+      request: finalRequest,
       created_at: formatDateToJST(new Date()),
     };
 
@@ -165,7 +167,7 @@ app.post('/api/calls', async (req: Request, res: Response) => {
       call: callData,
     });
 
-    await logCallToSheet(finalLocation);
+    await logCallToSheet(finalLocation, finalRequest);
 
     res.json(callData);
   } catch (error) {
@@ -318,7 +320,7 @@ function broadcastToClients(message: any) {
 }
 
 // Log call to Google Sheets
-async function logCallToSheet(location: string) {
+async function logCallToSheet(location: string, request: string = '') {
   try {
     const authClient = await auth.getClient();
     
@@ -326,13 +328,13 @@ async function logCallToSheet(location: string) {
     
     // シートに追加するデータ
     const values = [
-      [timestamp, location]
+      [timestamp, location, request]
     ];
 
     await sheetsAPI.spreadsheets.values.append({
       auth: authClient,
       spreadsheetId: spreadsheetId,
-      range: 'ログ!A:B',
+      range: 'ログ!A:C',
       valueInputOption: 'USER_ENTERED',
       requestBody: {
         values: values,
