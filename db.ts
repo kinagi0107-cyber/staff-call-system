@@ -126,9 +126,9 @@ export async function initializeDatabase() {
       });
     });
     
-// db.tsのinitializeDatabase()内、CREATE TABLE群の後に追加
-db.run(`ALTER TABLE qr_codes ADD COLUMN department TEXT DEFAULT 'none'`, () => {});
-db.run(`ALTER TABLE staff_calls ADD COLUMN request TEXT DEFAULT ''`, () => {});
+
+    db.run(`ALTER TABLE qr_codes ADD COLUMN department TEXT DEFAULT 'none'`, () => {});
+    db.run(`ALTER TABLE staff_calls ADD COLUMN request TEXT DEFAULT ''`, () => {});
 
     // Seed hardcoded QR codes
     await seedHardcodedQRCodes();
