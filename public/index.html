@@ -1179,13 +1179,8 @@ function playNotificationSound() {
           playNotificationSound();
           document.getElementById('completionScreen').classList.add('active');
           
-          setTimeout(() => {
-            document.getElementById('completionScreen').classList.remove('active');
-            if (window.history.length > 1) {
-              window.history.back();
-            } else {
-              window.close();
-            }
+                    setTimeout(() => {
+            document.body.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100vh;background:#ffffff;flex-direction:column;gap:20px;"><div style="font-size:60px;">✅</div><h2 style="font-size:24px;color:#667eea;font-weight:bold;">呼び出し完了</h2><p style="color:#666;font-size:16px;">まもなくスタッフが参ります</p></div>';
           }, 3000);
         } else if (callResponse.status === 429) {
           // 重複呼び出し
@@ -1274,13 +1269,9 @@ function playNotificationSound() {
       document.getElementById('confirmScreen').classList.add('active');
     }
 
-    function cancelCall() {
+        function cancelCall() {
       pendingCallData = null;
-      if (window.history.length > 1) {
-        window.history.back();
-      } else {
-        window.close();
-      }
+      document.body.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100vh;background:#ffffff;flex-direction:column;gap:20px;"><div style="font-size:60px;">👋</div><h2 style="font-size:24px;color:#667eea;font-weight:bold;">キャンセルしました</h2><p style="color:#666;font-size:16px;">またご利用ください</p></div>';
     }
 
     // 初期化
