@@ -575,15 +575,17 @@
   </div>
 
   <!-- 呼び出し確認画面 -->
-  <div id="confirmScreen" class="overlay-screen">
+   <div id="confirmScreen" class="overlay-screen">
     <div class="overlay-content">
       <h2>🔔 スタッフを呼びますか？</h2>
-      <p id="confirmLocationText" style="font-size: 18px; font-weight: bold; margin: 15px 0; color: #667eea;"></p>
-      <div style="display: flex; gap: 15px; margin-top: 20px;">
-        <button onclick="confirmCall()" style="flex: 1; padding: 15px; background: #667eea; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer;">✅ 呼ぶ</button>
-        <button onclick="cancelCall()" style="flex: 1; padding: 15px; background: #f0f0f0; color: #333; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer;">❌ キャンセル</button>
+      <p id="confirmLocationText" ...></p>
+      <div style="display: flex; ...">
+        <button onclick="confirmCall()" ...>✅ 呼ぶ</button>
+        <button onclick="cancelCall()" ...>❌ キャンセル</button>
       </div>
     </div>
+  </div>
+  
       <!-- 要望選択画面 -->
   <div id="requestScreen" class="overlay-screen">
     <div class="overlay-content" style="max-width: 500px; width: 95%;">
@@ -594,8 +596,7 @@
         <button onclick="proceedToConfirm()" style="width: 100%; margin-top: 8px; padding: 12px; background: #667eea; color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer;">✅ 次へ</button>
       </div>
       <button onclick="cancelCall()" style="width: 100%; padding: 12px; background: #f0f0f0; color: #333; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer;">❌ キャンセル</button>
-    </div>
-  </div>
+   </div>
   </div>
 
   <!-- 完了画面 -->
