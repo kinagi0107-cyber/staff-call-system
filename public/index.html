@@ -1285,8 +1285,7 @@ function playNotificationSound() {
 
     // 初期化
      window.addEventListener('load', () => {
-   // QRスキャンからのアクセスの場合はログイン画面を非表示にする
-            const urlParams = new URLSearchParams(window.location.search);
+         const urlParams = new URLSearchParams(window.location.search);
       if (urlParams.get('call')) {
         document.getElementById('passwordModal').classList.remove('active');
         // QRスキャンからのアクセス時はタブバーとダッシュボードを非表示にする
@@ -1294,7 +1293,6 @@ function playNotificationSound() {
         document.querySelector('.tab-content.active') && (document.querySelector('.tab-content.active').style.display = 'none');
         document.querySelector('.container') && (document.querySelector('.container').style.visibility = 'hidden');
       }
-       console.log('Page loaded');
       loadCalls();
       
       if ('Notification' in window && Notification.permission === 'default') {
