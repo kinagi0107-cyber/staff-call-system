@@ -574,14 +574,15 @@
     </div>
   </div>
 
-  <!-- 呼び出し確認画面 -->
-   <div id="confirmScreen" class="overlay-screen">
-    <div class="overlay-content">
-      <h2>🔔 スタッフを呼びますか？</h2>
-      <p id="confirmLocationText" ...></p>
-      <div style="display: flex; ...">
-        <button onclick="confirmCall()" ...>✅ 呼ぶ</button>
-        <button onclick="cancelCall()" ...>❌ キャンセル</button>
+    <!-- 呼び出し確認画面 -->
+  <div id="confirmScreen" class="overlay-screen">
+    <div class="overlay-content" style="max-width: 400px; width: 90%; padding: 40px 30px;">
+      <div style="font-size: 50px; margin-bottom: 15px;">🔔</div>
+      <h2 style="font-size: 22px; margin-bottom: 20px; color: #667eea;">スタッフを呼びますか？</h2>
+      <p id="confirmLocationText" style="font-size: 20px; font-weight: bold; margin-bottom: 25px; color: #333; background: #f0f4ff; padding: 12px 20px; border-radius: 8px;"></p>
+      <div style="display: flex; gap: 12px; margin-top: 10px;">
+        <button onclick="confirmCall()" style="flex: 1; padding: 16px; background: #667eea; color: white; border: none; border-radius: 10px; font-size: 17px; font-weight: bold; cursor: pointer;">✅ 呼ぶ</button>
+        <button onclick="cancelCall()" style="flex: 1; padding: 16px; background: #f0f0f0; color: #333; border: none; border-radius: 10px; font-size: 17px; font-weight: bold; cursor: pointer;">❌ キャンセル</button>
       </div>
     </div>
   </div>
@@ -1179,9 +1180,13 @@ function playNotificationSound() {
           playNotificationSound();
           document.getElementById('completionScreen').classList.add('active');
           
-                    setTimeout(() => {
+         setTimeout(() => {
             document.body.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100vh;background:#ffffff;flex-direction:column;gap:20px;"><div style="font-size:60px;">✅</div><h2 style="font-size:24px;color:#667eea;font-weight:bold;">呼び出し完了</h2><p style="color:#666;font-size:16px;">まもなくスタッフが参ります</p></div>';
+            setTimeout(() => {
+              if (window.history.length > 1) { window.history.back(); } else { window.close(); }
+            }, 2000);
           }, 3000);
+
         } else if (callResponse.status === 429) {
           // 重複呼び出し
                     document.getElementById('duplicateScreen').classList.add('active');
