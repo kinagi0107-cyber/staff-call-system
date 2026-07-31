@@ -1274,10 +1274,14 @@ function playNotificationSound() {
       document.getElementById('confirmScreen').classList.add('active');
     }
 
-        function cancelCall() {
+     function cancelCall() {
       pendingCallData = null;
       document.body.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100vh;background:#ffffff;flex-direction:column;gap:20px;"><div style="font-size:60px;">👋</div><h2 style="font-size:24px;color:#667eea;font-weight:bold;">キャンセルしました</h2><p style="color:#666;font-size:16px;">またご利用ください</p></div>';
+      setTimeout(() => {
+        if (window.history.length > 1) { window.history.back(); } else { window.close(); }
+      }, 2000);
     }
+
 
     // 初期化
      window.addEventListener('load', () => {
