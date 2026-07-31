@@ -534,6 +534,14 @@
           <div class="form-group">
             <label>QRコード名</label>
             <input type="text" id="qrNameInput" placeholder="例: テーブル1, 売場A">
+                      <div class="form-group" style="margin-top: 10px;">
+            <label>部門</label>
+            <select id="qrDepartmentInput" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px; margin-top: 5px;">
+              <option value="none">未設定</option>
+              <option value="treasure">🏪 トレジャー</option>
+              <option value="vintage">👕 古着</option>
+            </select>
+            </div>
           </div>
           <button class="button button-primary" onclick="createQRCode()" style="width: 100%;">+ 作成</button>
         </div>
@@ -576,6 +584,18 @@
         <button onclick="cancelCall()" style="flex: 1; padding: 15px; background: #f0f0f0; color: #333; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer;">❌ キャンセル</button>
       </div>
     </div>
+      <!-- 要望選択画面 -->
+  <div id="requestScreen" class="overlay-screen">
+    <div class="overlay-content" style="max-width: 500px; width: 95%;">
+      <h2 style="margin-bottom: 20px;">📋 ご要望を選択してください</h2>
+      <div id="requestButtons" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;"></div>
+      <div id="requestOtherInput" style="display: none; margin-bottom: 15px;">
+        <textarea id="requestOtherText" placeholder="ご要望を入力してください" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; min-height: 80px; resize: none; box-sizing: border-box;"></textarea>
+        <button onclick="proceedToConfirm()" style="width: 100%; margin-top: 8px; padding: 12px; background: #667eea; color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; cursor: pointer;">✅ 次へ</button>
+      </div>
+      <button onclick="cancelCall()" style="width: 100%; padding: 12px; background: #f0f0f0; color: #333; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer;">❌ キャンセル</button>
+    </div>
+  </div>
   </div>
 
   <!-- 完了画面 -->
@@ -762,11 +782,11 @@
         const response = await fetch(API_URL + '/qr-codes', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name })
+          body: JSON.stringify({ name, department: document.getElementById('qrDepartmentInput').value })
         });
-        
         if (response.ok) {
           document.getElementById('qrNameInput').value = '';
+          document.getElementById('qrDepartmentInput').value = 'none';
           loadQRCodes();
           alert('QRコードを作成しました');
         }
@@ -882,7 +902,13 @@ function startRealtimeUpdates() {
           time.className = 'call-item-time';
           const createdAt = new Date(call.created_at);
           time.textContent = createdAt.toLocaleString('ja-JP');
-
+          if (call.request) {
+            const requestTag = document.createElement('div');
+            requestTag.style.cssText = 'font-size: 12px; color: #667eea; margin-top: 4px; font-weight: 500;';
+            requestTag.textContent = '📋 ' + call.request;
+            content.appendChild(requestTag);
+          }
+          content.appendChild(time);
           
           div.appendChild(content);
           
@@ -950,7 +976,6 @@ function startRealtimeUpdates() {
           time.className = 'call-item-time';
           const createdAt = new Date(call.created_at);
           time.textContent = createdAt.toLocaleString('ja-JP');
-          content.appendChild(time);
           
           div.appendChild(content);
           completedList.appendChild(div);
@@ -1118,10 +1143,9 @@ function playNotificationSound() {
             const qrCode = await qrResponse.json();
             console.log('QR code found:', qrCode);
             
-            // 確認画面を表示
-            pendingCallData = { callId, location: qrCode.name || '場所未指定' };
-            document.getElementById('confirmLocationText').textContent = qrCode.name || '場所未指定';
-            document.getElementById('confirmScreen').classList.add('active');
+            // 要望選択画面を表示
+            pendingCallData = { callId, location: qrCode.name || '場所未指定', department: qrCode.department || 'none', request: '' };
+            showRequestScreen(qrCode.department || 'none');
           } else {
             console.error('QR code not found:', qrResponse.status);
           }
@@ -1141,9 +1165,10 @@ function playNotificationSound() {
         const callResponse = await fetch(API_URL + '/calls', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
+         body: JSON.stringify({ 
             qrCodeId: pendingCallData.callId, 
-            location: pendingCallData.location
+            location: pendingCallData.location,
+            request: pendingCallData.request || ''
           })
         });
         
@@ -1181,6 +1206,72 @@ function playNotificationSound() {
       }
       
       pendingCallData = null;
+    }
+    // 部門ごとの要望リスト
+    const REQUEST_OPTIONS = {
+      treasure: ['クレジット移動', '初期位置に戻してほしい', '平行移動', '景品・ダミー交換', 'その他'],
+      vintage: ['ショーケースの中の商品が見たい', '高いところのものを見たい', 'その他'],
+      none: ['その他']
+    };
+
+    function showRequestScreen(department) {
+      const options = REQUEST_OPTIONS[department] || REQUEST_OPTIONS['none'];
+      const container = document.getElementById('requestButtons');
+      container.innerHTML = '';
+      document.getElementById('requestOtherInput').style.display = 'none';
+      document.getElementById('requestOtherText').value = '';
+      selectedRequest = '';
+
+      options.forEach(option => {
+        const btn = document.createElement('button');
+        btn.textContent = option;
+        btn.style.cssText = 'padding: 14px; background: #f0f4ff; color: #333; border: 2px solid #ddd; border-radius: 8px; font-size: 15px; font-weight: 500; cursor: pointer; text-align: left;';
+        btn.onclick = () => selectRequest(option, btn);
+        container.appendChild(btn);
+      });
+
+      document.getElementById('requestScreen').classList.add('active');
+    }
+
+    let selectedRequest = '';
+
+    function selectRequest(option, btn) {
+      document.querySelectorAll('#requestButtons button').forEach(b => {
+        b.style.background = '#f0f4ff';
+        b.style.borderColor = '#ddd';
+        b.style.color = '#333';
+      });
+      btn.style.background = '#667eea';
+      btn.style.borderColor = '#667eea';
+      btn.style.color = 'white';
+      selectedRequest = option;
+
+      if (option === 'その他') {
+        document.getElementById('requestOtherInput').style.display = 'block';
+      } else {
+        document.getElementById('requestOtherInput').style.display = 'none';
+        setTimeout(() => proceedToConfirm(), 300);
+      }
+    }
+
+    function proceedToConfirm() {
+      if (!selectedRequest) {
+        alert('要望を選択してください');
+        return;
+      }
+      if (selectedRequest === 'その他') {
+        const otherText = document.getElementById('requestOtherText').value.trim();
+        if (!otherText) {
+          alert('要望を入力してください');
+          return;
+        }
+        pendingCallData.request = 'その他: ' + otherText;
+      } else {
+        pendingCallData.request = selectedRequest;
+      }
+      document.getElementById('requestScreen').classList.remove('active');
+      document.getElementById('confirmLocationText').textContent = pendingCallData.location;
+      document.getElementById('confirmScreen').classList.add('active');
     }
 
     function cancelCall() {
