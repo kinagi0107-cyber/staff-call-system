@@ -71,21 +71,22 @@ export async function seedHardcodedQRCodes() {
     db.serialize(() => {
       HARDCODED_QR_CODES.forEach((code) => {
         db.run(
-          'INSERT OR IGNORE INTO qr_codes (id, name, created_at) VALUES (?, ?, CURRENT_TIMESTAMP)',
-              // departmentをHARDCODEDデータで更新
-    for (const qr of HARDCODED_QR_CODES) {
-      db.run(
-        `UPDATE qr_codes SET department = ? WHERE id = ? AND (department IS NULL OR department = 'none')`,
-        [qr.department || 'none', qr.id]
-      );
-    }
-
-          [code.id, code.name],
+          'INSERT OR IGNORE INTO qr_codes (id, name, department, created_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)',
+          [code.id, code.name, code.department || 'none'],
           (err) => {
             if (err) console.error(`Error seeding QR code ${code.id}:`, err);
           }
         );
       });
+
+      // departmentをHARDCODEDデータで更新
+      HARDCODED_QR_CODES.forEach((qr) => {
+        db.run(
+          `UPDATE qr_codes SET department = ? WHERE id = ? AND (department IS NULL OR department = 'none')`,
+          [qr.department || 'none', qr.id]
+        );
+      });
+
       resolve();
     });
   });
