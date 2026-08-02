@@ -1001,7 +1001,7 @@ function startRealtimeUpdates() {
         });
         
         if (response.ok) {
-          playNotificationSound();
+          playCompleteSound();
           loadCalls();
           loadCompletedCalls();
           updatePendingBadge();
@@ -1092,6 +1092,35 @@ function playNotificationSound() {
 
   } catch (e) {
     console.error('Error playing notification sound:', e);
+  }
+}
+    
+function playCompleteSound() {
+  try {
+    if (!sharedAudioContext) {
+      sharedAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    const audioContext = sharedAudioContext;
+    const startAudio = () => {
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      oscillator.frequency.value = 880;
+      oscillator.type = 'sine';
+      const t = audioContext.currentTime;
+      gainNode.gain.setValueAtTime(0.8, t);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, t + 0.4);
+      oscillator.start(t);
+      oscillator.stop(t + 0.4);
+    };
+    if (audioContext.state === 'suspended') {
+      audioContext.resume().then(startAudio);
+    } else {
+      startAudio();
+    }
+  } catch (e) {
+    console.error('Error playing complete sound:', e);
   }
 }
 
