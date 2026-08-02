@@ -632,6 +632,7 @@
   <script>
     const API_URL = '/api';
     let isLoggedIn = false;
+    let sharedAudioContext = null;
     let qrCodes = [];
     let calls = [];
     let eventSource = null;
@@ -660,13 +661,16 @@
     }
 
     // ログイン
-    function login() {
+        function login() {
       const password = document.getElementById('passwordInput').value;
       if (password === 'nanaehama2611') {
         isLoggedIn = true;
         document.getElementById('passwordModal').classList.remove('active');
         document.getElementById('logoutBtn').style.display = 'block';
+        loadCalls();
         loadQRCodes();
+        startRealtimeUpdates();
+        loadStaffStatus();
       } else {
         alert('パスワードが間違っています');
       }
@@ -1292,14 +1296,17 @@ function playNotificationSound() {
         document.querySelector('.tabs').style.display = 'none';
         document.getElementById('staff-tab').style.display = 'none';
       }
-      loadCalls();
-      
+       
+      if (!urlParams.get('call')) {
+        // 通常アクセス時：ログイン後にのみ呼び出し一覧を更新するため、
+        // startRealtimeUpdates は常に開始（通知受信のため）
+        startRealtimeUpdates();
+        loadStaffStatus();
+      }
       if ('Notification' in window && Notification.permission === 'default') {
         Notification.requestPermission();
       }
-      
-      startRealtimeUpdates();
-      loadStaffStatus();
+
             // iPad Safari 対策: 最初のユーザー操作で AudioContext を初期化
       document.addEventListener('touchstart', function initAudio() {
         if (!sharedAudioContext) {
@@ -1323,8 +1330,7 @@ handleCallFromURL();
         eventSource.close();
       }
     });   
-    // AudioContext をグローバルで保持（iPad Safari 対策）
-let sharedAudioContext = null;
+
     // スタッフ対応状態管理
     let staffStatus = {
   treasure: 'available',
