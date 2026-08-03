@@ -167,7 +167,7 @@ app.post('/api/calls', async (req: Request, res: Response) => {
       call: callData,
     });
 
-    await logCallToSheet(finalLocation, finalRequest);
+    await logCallToSheet(finalLocation, finalRequest, qrCode.department || '');
 
     res.json(callData);
   } catch (error) {
@@ -320,21 +320,17 @@ function broadcastToClients(message: any) {
 }
 
 // Log call to Google Sheets
-async function logCallToSheet(location: string, request: string = '') {
+async function logCallToSheet(location: string, request: string = '', department: string = '') {
   try {
     const authClient = await auth.getClient();
-    
     const timestamp = formatDateToJST(new Date());
-    
-    // シートに追加するデータ
     const values = [
-      [timestamp, location, request]
+      [timestamp, location, request, department]
     ];
-
     await sheetsAPI.spreadsheets.values.append({
       auth: authClient,
       spreadsheetId: spreadsheetId,
-      range: 'ログ!A:C',
+      range: 'ログ!A:D',
       valueInputOption: 'USER_ENTERED',
       requestBody: {
         values: values,
